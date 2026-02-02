@@ -17,19 +17,31 @@ from app.models.case import FraudCase
 async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
     # Create database tables
+    print("Creating database tables...")
     Base.metadata.create_all(bind=engine)
     
-    # Auto-seed if database is empty
+    # Auto-seed if database is empty (quick seed for production)
     db = SessionLocal()
     try:
         count = db.query(FraudCase).count()
         if count == 0:
             print("Database empty - seeding with fraud data...")
-            from app.db.seed_data import seed_database
-            seed_database(force_reseed=True)
-            print("Seeding complete!")
+            from app.db.seed_data import generate_cases, generate_mega_cases, Base as SeedBase
+            from app.db.database import engine as db_engine
+            
+            # Quick seed: 5000 cases for faster startup
+            SeedBase.metadata.create_all(bind=db_engine)
+            
+            cases = generate_mega_cases()  # ~18 mega cases
+            cases.extend(generate_cases(5000))  # 5000 regular cases
+            
+            db.bulk_save_objects(cases)
+            db.commit()
+            print(f"Seeded {len(cases):,} cases!")
         else:
-            print(f"Database has {count:,} cases - skipping seed")
+            print(f"Database has {count:,} cases - ready!")
+    except Exception as e:
+        print(f"Seed error (non-fatal): {e}")
     finally:
         db.close()
     
