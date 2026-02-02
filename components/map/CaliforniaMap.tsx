@@ -120,11 +120,13 @@ export default function CaliforniaMap() {
     if (!ready || !map || !casePoints) return
 
     if (map.getSource('fraud')) {
-      (map.getSource('fraud') as GeoJSONSource).setData(casePoints)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (map.getSource('fraud') as GeoJSONSource).setData(casePoints as any)
     } else {
       map.addSource('fraud', {
         type: 'geojson',
-        data: casePoints,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data: casePoints as any,
       })
 
       // Heatmap layer
