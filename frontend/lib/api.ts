@@ -1,8 +1,10 @@
 /**
- * API client for California Fraud Intelligence backend
+ * API client for CaliFraud Intelligence Platform
+ * Uses Next.js API routes (same-origin)
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+// Use relative paths since API routes are in the same app
+const API_BASE = ''
 
 export interface FraudCase {
   id: number
@@ -116,9 +118,9 @@ export const casesAPI = {
 
   get: (id: number) => fetchAPI<FraudCase>(`/api/cases/${id}`),
 
-  getSchemeTypes: () => fetchAPI<string[]>('/api/cases/scheme-types/list'),
+  getSchemeTypes: () => fetchAPI<string[]>('/api/cases/scheme-types'),
 
-  getCounties: () => fetchAPI<string[]>('/api/cases/counties/list'),
+  getCounties: () => fetchAPI<string[]>('/api/cases/counties'),
 }
 
 // Analytics API
@@ -139,6 +141,4 @@ export const geoAPI = {
 
   points: (filters: CaseFilters = {}) =>
     fetchAPI<GeoJSONFeatureCollection>(`/api/geo/points${buildQueryString(filters)}`),
-
-  californiaOutline: () => fetchAPI<GeoJSONFeatureCollection['features'][0]>('/api/geo/california-outline'),
 }

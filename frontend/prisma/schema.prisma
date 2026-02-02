@@ -1,0 +1,37 @@
+// CaliFraud Database Schema
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model FraudCase {
+  id              Int       @id @default(autoincrement())
+  caseNumber      String    @unique @map("case_number")
+  title           String
+  description     String?
+  schemeType      String    @map("scheme_type")
+  amountExposed   Decimal?  @map("amount_exposed") @db.Decimal(18, 2)
+  amountRecovered Decimal?  @map("amount_recovered") @db.Decimal(18, 2)
+  dateFiled       DateTime? @map("date_filed")
+  dateResolved    DateTime? @map("date_resolved")
+  status          String    @default("open")
+  county          String
+  city            String?
+  latitude        Decimal?  @db.Decimal(10, 7)
+  longitude       Decimal?  @db.Decimal(10, 7)
+  sourceUrl       String?   @map("source_url")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([schemeType])
+  @@index([county])
+  @@index([status])
+  @@index([dateFiled])
+  @@index([amountExposed])
+  @@map("fraud_cases")
+}
