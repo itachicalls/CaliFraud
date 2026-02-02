@@ -31,6 +31,9 @@ export default function CaliforniaMap() {
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return
 
+    // Detect mobile
+    const isMobile = window.innerWidth < 768
+
     const map = new Map({
       container: containerRef.current,
       style: {
@@ -53,26 +56,52 @@ export default function CaliforniaMap() {
           source: 'carto',
         }],
       },
-      center: [-119.5, 37.5],
-      zoom: 5.5,
+      // Start centered on California
+      center: [-119.5, 37.0],
+      zoom: isMobile ? 4.8 : 5.5,
       minZoom: 4,
       maxZoom: 14,
     })
 
     mapRef.current = map
 
-    map.addControl(new NavigationControl({ showCompass: false }), 'bottom-right')
+    // Only show navigation controls on desktop
+    if (!isMobile) {
+      map.addControl(new NavigationControl({ showCompass: false }), 'bottom-right')
+    }
     map.addControl(new AttributionControl({ compact: true }), 'bottom-left')
 
     map.on('load', () => {
       setReady(true)
+      
+      // Different padding for mobile vs desktop
+      const padding = isMobile 
+        ? { top: 80, bottom: 140, left: 20, right: 20 }  // Mobile: account for header + bottom timeline
+        : { top: 50, bottom: 100, left: 340, right: 50 } // Desktop: account for sidebar
+      
       map.fitBounds([[-124.5, 32.5], [-114.0, 42.0]], {
-        padding: { top: 50, bottom: 100, left: 340, right: 50 },
+        padding,
         duration: 1500,
       })
     })
 
+    // Handle resize for responsive padding
+    const handleResize = () => {
+      const nowMobile = window.innerWidth < 768
+      const padding = nowMobile 
+        ? { top: 80, bottom: 140, left: 20, right: 20 }
+        : { top: 50, bottom: 100, left: 340, right: 50 }
+      
+      map.fitBounds([[-124.5, 32.5], [-114.0, 42.0]], {
+        padding,
+        duration: 500,
+      })
+    }
+
+    window.addEventListener('resize', handleResize)
+
     return () => {
+      window.removeEventListener('resize', handleResize)
       mapRef.current?.remove()
       mapRef.current = null
     }
@@ -175,7 +204,7 @@ export default function CaliforniaMap() {
         },
       })
 
-      // Interactions
+      // Desktop hover interactions
       map.on('mouseenter', 'fraud-points', (e) => {
         map.getCanvas().style.cursor = 'pointer'
         const f = e.features?.[0]
@@ -210,9 +239,20 @@ export default function CaliforniaMap() {
         setTooltip(null)
       })
 
+      // Click/tap to open detail panel (works on both mobile and desktop)
       map.on('click', 'fraud-points', (e) => {
         const id = e.features?.[0]?.properties?.id
         if (id) openDetailPanel(Number(id))
+      })
+
+      // Also allow clicking on heatmap areas (mobile-friendly)
+      map.on('click', 'fraud-heat', (e) => {
+        // Query for nearby points when clicking heatmap
+        const features = map.queryRenderedFeatures(e.point, { layers: ['fraud-points'] })
+        if (features.length > 0) {
+          const id = features[0]?.properties?.id
+          if (id) openDetailPanel(Number(id))
+        }
       })
     }
   }, [ready, casePoints, openDetailPanel])
@@ -259,11 +299,13 @@ export default function CaliforniaMap() {
         )}
       </AnimatePresence>
 
+      {/* Fraud intensity legend - responsive positioning */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 1 }}
-        className="absolute bottom-28 right-4 z-10 bg-white/95 backdrop-blur rounded-xl shadow-lg border border-gray-100 p-3"
+        className="absolute z-10 bg-white/95 backdrop-blur rounded-xl shadow-lg border border-gray-100 p-3
+          bottom-36 right-4 md:bottom-28"
       >
         <p className="text-xs font-semibold text-gray-600 mb-2">Fraud Intensity</p>
         <div className="w-20 h-2.5 rounded-full" style={{ background: 'linear-gradient(to right, #FFF3C4, #F6B400, #FF7A18, #D72638)' }} />
