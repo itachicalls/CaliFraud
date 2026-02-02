@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
+import prisma from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
-import prisma from '@/lib/db'
+export const runtime = 'nodejs'
 
 export async function GET() {
   try {
@@ -14,6 +15,6 @@ export async function GET() {
     return NextResponse.json(counties.map((c) => c.county))
   } catch (error) {
     console.error('Counties API error:', error)
-    return NextResponse.json({ error: 'Failed to fetch counties' }, { status: 500 })
+    return NextResponse.json([])
   }
 }

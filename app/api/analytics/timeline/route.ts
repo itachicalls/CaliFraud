@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import prisma from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
-import prisma from '@/lib/db'
+export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,9 +11,9 @@ export async function GET(request: NextRequest) {
     const schemeType = searchParams.get('scheme_type')
     const county = searchParams.get('county')
 
-    // Build raw SQL for monthly grouping since Prisma doesn't support date_trunc
+    // Build raw SQL for monthly grouping
     const whereConditions: string[] = ['date_filed IS NOT NULL']
-    const params: (string | null)[] = []
+    const params: string[] = []
     
     if (schemeType) {
       params.push(schemeType)
@@ -56,6 +57,6 @@ export async function GET(request: NextRequest) {
     )
   } catch (error) {
     console.error('Timeline API error:', error)
-    return NextResponse.json({ error: 'Failed to fetch timeline' }, { status: 500 })
+    return NextResponse.json([])
   }
 }

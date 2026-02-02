@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-export const dynamic = 'force-dynamic'
 import prisma from '@/lib/db'
 import { Prisma } from '@prisma/client'
+
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
   try {
@@ -68,6 +69,13 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Summary API error:', error)
-    return NextResponse.json({ error: 'Failed to fetch summary' }, { status: 500 })
+    return NextResponse.json({
+      total_cases: 0,
+      total_exposed: 0,
+      total_recovered: 0,
+      average_amount: 0,
+      recovery_rate: 0,
+      scheme_breakdown: [],
+    })
   }
 }

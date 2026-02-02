@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-export const dynamic = 'force-dynamic'
 import prisma from '@/lib/db'
 import { Prisma } from '@prisma/client'
+
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
   try {
@@ -77,6 +78,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(geojson)
   } catch (error) {
     console.error('Geo points API error:', error)
-    return NextResponse.json({ error: 'Failed to fetch points' }, { status: 500 })
+    return NextResponse.json({ type: 'FeatureCollection', features: [] })
   }
 }

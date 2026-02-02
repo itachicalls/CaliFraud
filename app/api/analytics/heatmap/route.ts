@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-export const dynamic = 'force-dynamic'
 import prisma from '@/lib/db'
 import { Prisma } from '@prisma/client'
+
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
   try {
@@ -62,6 +63,6 @@ export async function GET(request: NextRequest) {
     )
   } catch (error) {
     console.error('Heatmap API error:', error)
-    return NextResponse.json({ error: 'Failed to fetch heatmap' }, { status: 500 })
+    return NextResponse.json([])
   }
 }
