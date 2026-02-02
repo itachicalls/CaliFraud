@@ -5,7 +5,9 @@
 
 import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({
+  datasourceUrl: process.env.DATABASE_URL,
+})
 
 // All 58 California counties with coordinates and fraud weighting
 const COUNTIES: Record<string, { lat: number; lng: number; weight: number }> = {
