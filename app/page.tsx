@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { CommandPanel, MobileNav } from '@/components/sidebar'
-import { TimeScrubber } from '@/components/timeline'
+import { TimeScrubber, MobileTimeScrubber } from '@/components/timeline'
 import { CaseDetailPanel } from '@/components/modal'
 import { SkipLink } from '@/components/ui'
 
@@ -40,16 +40,21 @@ export default function HomePage() {
         {/* Mobile Navigation */}
         <MobileNav />
 
-        {/* Time Scrubber - responsive positioning */}
+        {/* Desktop Time Scrubber */}
         <div className="hidden md:block">
           <TimeScrubber />
+        </div>
+
+        {/* Mobile Time Scrubber */}
+        <div className="md:hidden">
+          <MobileTimeScrubber />
         </div>
 
         {/* Case Detail Modal */}
         <CaseDetailPanel />
 
         {/* Insight Callout - hidden on mobile */}
-        <div className="fixed top-4 right-4 z-10 max-w-xs hidden md:block">
+        <div className="fixed top-4 right-4 z-10 max-w-xs hidden lg:block">
           <div 
             className="bg-white/95 backdrop-blur-sm rounded-card shadow-card border border-california-border p-4"
             role="complementary"
@@ -59,15 +64,6 @@ export default function HomePage() {
             <p className="text-sm text-text-primary">
               <span className="font-medium">Southern CA telemedicine fraud</span>{' '}
               surged during 2020-2021, coinciding with the pandemic.
-            </p>
-          </div>
-        </div>
-
-        {/* Mobile bottom info bar */}
-        <div className="fixed bottom-0 left-0 right-0 md:hidden z-10 p-4 bg-gradient-to-t from-california-sand">
-          <div className="glass rounded-card p-3 text-center">
-            <p className="text-sm text-text-secondary">
-              Tap markers for case details
             </p>
           </div>
         </div>
