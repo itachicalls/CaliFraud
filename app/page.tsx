@@ -22,6 +22,12 @@ const CaliforniaMap = dynamic(
   }
 )
 
+// Dynamic import for 3D character to avoid SSR issues with Three.js
+const DancingCharacter = dynamic(
+  () => import('@/components/3d/DancingCharacter'),
+  { ssr: false }
+)
+
 export default function HomePage() {
   return (
     <>
@@ -67,6 +73,9 @@ export default function HomePage() {
             </p>
           </div>
         </div>
+
+        {/* 3D Dancing Character - Pacific Ocean side */}
+        <DancingCharacter position="left" size={250} />
       </main>
     </>
   )
