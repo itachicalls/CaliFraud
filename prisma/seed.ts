@@ -4,8 +4,11 @@
  */
 
 import { PrismaClient } from '@prisma/client'
+import { getTypology } from '../lib/typology'
 
 const prisma = new PrismaClient()
+
+const AGENCIES = ['OIG', 'DOJ', 'DA', 'FBI', 'HHS-OIG', 'EDD-Fraud', 'CDSS']
 
 // All 58 California counties with coordinates and fraud weighting
 const COUNTIES: Record<string, { lat: number; lng: number; weight: number }> = {
@@ -148,21 +151,30 @@ function generateMegaCases() {
 
   return megaCases.map((mc, i) => {
     const countyData = COUNTIES[mc.county] || COUNTIES['Los Angeles']
+    const resolved = mc.status === 'convicted' || mc.status === 'settled'
+    const dateResolved = resolved ? new Date(mc.date.getTime() + Math.random() * 365 * 24 * 60 * 60 * 1000) : null
+    const stillOp = !resolved && (mc.status === 'under_investigation' || mc.status === 'charged') && Math.random() < 0.4
     return {
       caseNumber: `CA-MEGA-${mc.date.getFullYear()}-${String(i + 1).padStart(4, '0')}`,
       title: mc.title,
       description: `Major fraud investigation: ${mc.title}. Alleged fraudulent activity totaling $${mc.amount.toLocaleString()}.`,
       schemeType: mc.schemeType,
+      typology: getTypology(mc.schemeType),
       amountExposed: mc.amount,
-      amountRecovered: mc.status === 'convicted' || mc.status === 'settled' ? mc.amount * (0.1 + Math.random() * 0.4) : 0,
+      amountRecovered: resolved ? mc.amount * (0.1 + Math.random() * 0.4) : 0,
       dateFiled: mc.date,
-      dateResolved: mc.status === 'convicted' || mc.status === 'settled' ? new Date(mc.date.getTime() + Math.random() * 365 * 24 * 60 * 60 * 1000) : null,
+      dateResolved,
+      dateAlleged: new Date(mc.date.getTime() - 180 * 24 * 60 * 60 * 1000),
+      enforcingAgency: AGENCIES[i % AGENCIES.length],
       status: mc.status,
       county: mc.county,
       city: mc.city,
       latitude: countyData.lat + (Math.random() - 0.5) * 0.1,
       longitude: countyData.lng + (Math.random() - 0.5) * 0.1,
       sourceUrl: `https://oig.ca.gov/fraud/${mc.date.getFullYear()}/mega-${i + 1}`,
+      stillOperating: stillOp,
+      stillOperatingSource: stillOp ? 'https://oig.ca.gov/provider-search' : null,
+      entityNames: [`${mc.city} Holdings LLC`, `Defendant ${i + 1}`],
     }
   })
 }
@@ -196,21 +208,31 @@ function generateCases(count: number) {
     const titleTemplate = templates[Math.floor(Math.random() * templates.length)]
     const title = titleTemplate.replace('{city}', city).replace('{county}', countyName)
 
+    const resolved = ['settled', 'convicted', 'dismissed'].includes(status)
+    const dateResolved = resolved ? new Date(filedDate.getTime() + Math.random() * 730 * 24 * 60 * 60 * 1000) : null
+    const stillOp = !resolved && Math.random() < 0.08
+
     cases.push({
       caseNumber: `CA-${filedDate.getFullYear()}-${String(i + 1).padStart(6, '0')}`,
       title,
       description: `${scheme.type.replace(/_/g, ' ')} investigation in ${city}, ${countyName} County. Alleged fraudulent activity totaling $${Math.round(amount).toLocaleString()}.`,
       schemeType: scheme.type,
+      typology: getTypology(scheme.type),
       amountExposed: amount,
-      amountRecovered: ['settled', 'convicted'].includes(status) ? amount * Math.random() * 0.6 : 0,
+      amountRecovered: resolved ? amount * Math.random() * 0.6 : 0,
       dateFiled: filedDate,
-      dateResolved: ['settled', 'convicted', 'dismissed'].includes(status) ? new Date(filedDate.getTime() + Math.random() * 730 * 24 * 60 * 60 * 1000) : null,
+      dateResolved,
+      dateAlleged: new Date(filedDate.getTime() - (90 + Math.random() * 180) * 24 * 60 * 60 * 1000),
+      enforcingAgency: AGENCIES[Math.floor(Math.random() * AGENCIES.length)],
       status,
       county: countyName,
       city,
       latitude: countyData.lat + (Math.random() - 0.5) * 0.4,
       longitude: countyData.lng + (Math.random() - 0.5) * 0.4,
       sourceUrl: `https://oig.ca.gov/fraud/${filedDate.getFullYear()}/${i + 1}`,
+      stillOperating: stillOp,
+      stillOperatingSource: stillOp ? 'https://oig.ca.gov/provider-search' : null,
+      entityNames: [`${city} ${scheme.type.replace(/_/g, ' ')} Inc`, `Provider ${i % 5000}`],
     })
 
     if ((i + 1) % 10000 === 0) {
@@ -231,6 +253,8 @@ async function main() {
   if (existingCount > 0) {
     console.log(`Database already has ${existingCount.toLocaleString()} cases.`)
     console.log('Clearing existing data...')
+    await prisma.caseEntity.deleteMany()
+    await prisma.entity.deleteMany()
     await prisma.fraudCase.deleteMany()
   }
 
@@ -254,13 +278,54 @@ async function main() {
     console.log(`  Inserted batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(allCases.length / batchSize)}`)
   }
 
+  // Create entities and case-entity links for recidivism/network demo
+  console.log('\nCreating entity network (recidivism demo)...')
+  const casesForEntities = await prisma.fraudCase.findMany({
+    take: 500,
+    orderBy: { id: 'asc' },
+    select: { id: true, county: true, schemeType: true },
+  })
+
+  const entityPool = [
+    { name: 'Pacific Care Medical Group', entityType: 'provider', npi: '1234567890', ein: null as string | null },
+    { name: 'Inland Empire Billing LLC', entityType: 'business', npi: null as string | null, ein: '94-1234567' },
+    { name: 'SoCal Recovery Centers Inc', entityType: 'business', npi: null as string | null, ein: '94-7654321' },
+    { name: 'Central Valley Home Health', entityType: 'provider', npi: '9876543210', ein: null as string | null },
+    { name: 'John Smith (NPI 1112223334)', entityType: 'individual', npi: '1112223334', ein: null as string | null },
+    { name: 'Maria Garcia (NPI 5556667778)', entityType: 'individual', npi: '5556667778', ein: null as string | null },
+  ]
+
+  const createdEntities: { id: number; name: string }[] = []
+  for (const e of entityPool) {
+    const ent = await prisma.entity.create({
+      data: { name: e.name, entityType: e.entityType, npi: e.npi, ein: e.ein },
+    })
+    createdEntities.push({ id: ent.id, name: ent.name })
+  }
+
+  let linksCreated = 0
+  for (let i = 0; i < casesForEntities.length; i++) {
+    const c = casesForEntities[i]
+    const entityIdx = i % createdEntities.length
+    const entity = createdEntities[entityIdx]
+    try {
+      await prisma.caseEntity.create({
+        data: { caseId: c.id, entityId: entity.id, role: 'defendant' },
+      })
+      linksCreated++
+    } catch {
+      // ignore duplicate
+    }
+  }
+  console.log(`  Linked ${linksCreated} cases to ${createdEntities.length} entities (recidivism demo)`)
+
   console.log('\n============================================================')
   console.log('SEED COMPLETE!')
   console.log('============================================================')
 
   const total = await prisma.fraudCase.count()
   const totalExposed = await prisma.fraudCase.aggregate({ _sum: { amountExposed: true } })
-  
+
   console.log(`\nTotal cases: ${total.toLocaleString()}`)
   console.log(`Total fraud exposed: $${Number(totalExposed._sum.amountExposed || 0).toLocaleString()}`)
 }

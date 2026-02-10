@@ -4,6 +4,19 @@ import { useRef, useEffect, useState } from 'react'
 import * as THREE from 'three'
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js'
 import { motion, AnimatePresence } from 'framer-motion'
+import FraudQuoteBubble from './FraudQuoteBubble'
+
+// Disco colors for flashing effect
+const DISCO_COLORS = [
+  0xF6B400, // California poppy
+  0xFF7A18, // Sunset orange
+  0xD72638, // Red
+  0x1E6FFF, // Pacific blue
+  0x8B5CF6, // Purple
+  0xEC4899, // Pink
+  0x14B8A6, // Teal
+  0x2E5E4E, // Redwood green
+]
 
 interface DancingCharacterProps {
   position?: 'left' | 'right'
@@ -15,6 +28,7 @@ export default function DancingCharacter({ position = 'left', size = 300 }: Danc
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const mixerRef = useRef<THREE.AnimationMixer | null>(null)
+  const discoLightsRef = useRef<THREE.PointLight[]>([])
   const frameRef = useRef<number>(0)
 
   useEffect(() => {
@@ -45,19 +59,27 @@ export default function DancingCharacter({ position = 'left', size = 300 }: Danc
     renderer.shadowMap.type = THREE.PCFSoftShadowMap
     container.appendChild(renderer.domElement)
 
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6)
+    // Base lighting - brighter so model isn't black
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8)
     scene.add(ambientLight)
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1)
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9)
     directionalLight.position.set(5, 10, 7.5)
     directionalLight.castShadow = true
     scene.add(directionalLight)
 
-    // Golden rim light for California theme
-    const rimLight = new THREE.DirectionalLight(0xF6B400, 0.5)
-    rimLight.position.set(-5, 5, -5)
-    scene.add(rimLight)
+    // Disco flashing lights - tight around the model for strong color wash
+    const discoPositions = [
+      [40, 100, 80], [80, 80, 40], [30, 120, 60],
+      [-40, 90, 60], [-60, 110, 40], [0, 140, 100],
+      [50, 60, -20], [-30, 70, 50],
+    ]
+    discoPositions.forEach((pos, i) => {
+      const light = new THREE.PointLight(DISCO_COLORS[i % DISCO_COLORS.length], 5, 250)
+      light.position.set(pos[0], pos[1], pos[2])
+      scene.add(light)
+      discoLightsRef.current.push(light)
+    })
 
     // Ground plane (invisible, just for shadow)
     const groundGeometry = new THREE.PlaneGeometry(500, 500)
@@ -83,24 +105,33 @@ export default function DancingCharacter({ position = 'left', size = 300 }: Danc
         fbx.position.sub(center)
         fbx.position.y = 0
 
-        // Enable shadows
+        // Fix black model - force light gray base + emissive disco tint
         fbx.traverse((child) => {
           if (child instanceof THREE.Mesh) {
             child.castShadow = true
             child.receiveShadow = true
             
-            // Add a nice material if needed
             if (child.material) {
               const materials = Array.isArray(child.material) ? child.material : [child.material]
               materials.forEach((mat) => {
                 if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhongMaterial) {
-                  mat.metalness = 0.3
-                  mat.roughness = 0.7
+                  mat.metalness = 0.1
+                  mat.roughness = 0.5
+                  // Force light base so disco colors show - any dark material becomes gray
+                  const hex = mat.color.getHex()
+                  if (hex < 0x333333) {
+                    mat.color.setHex(0x666666)
+                  }
+                  mat.emissive = new THREE.Color(0x333333)
+                  ;(mat as THREE.MeshStandardMaterial).emissiveIntensity = 0.3
                 }
               })
             }
           }
         })
+
+        // Store model ref for emissive disco pulse in animation loop
+        ;(scene as THREE.Scene & { _discoModel?: THREE.Group })._discoModel = fbx
 
         scene.add(fbx)
 
@@ -122,13 +153,39 @@ export default function DancingCharacter({ position = 'left', size = 300 }: Danc
       }
     )
 
-    // Animation loop
+    // Animation loop with disco flashing
     const animate = () => {
       frameRef.current = requestAnimationFrame(animate)
 
       const delta = clock.getDelta()
+      const time = clock.getElapsedTime()
+
       if (mixerRef.current) {
         mixerRef.current.update(delta)
+      }
+
+      // Disco flash - cycle colors every ~0.3 seconds
+      discoLightsRef.current.forEach((light, i) => {
+        const colorIndex = Math.floor(time * 4 + i * 0.5) % DISCO_COLORS.length
+        light.color.setHex(DISCO_COLORS[colorIndex])
+        light.intensity = 4 + Math.sin(time * 10 + i) * 2
+      })
+
+      // Pulse model emissive with disco colors so it glows
+      const discoModel = (scene as THREE.Scene & { _discoModel?: THREE.Group })._discoModel
+      if (discoModel) {
+        const colorIndex = Math.floor(time * 4) % DISCO_COLORS.length
+        discoModel.traverse((child) => {
+          if (child instanceof THREE.Mesh && child.material) {
+            const mats = Array.isArray(child.material) ? child.material : [child.material]
+            mats.forEach((m) => {
+              if (m instanceof THREE.MeshStandardMaterial) {
+                m.emissive.setHex(DISCO_COLORS[colorIndex])
+                m.emissiveIntensity = 0.2 + Math.sin(time * 6) * 0.15
+              }
+            })
+          }
+        })
       }
 
       renderer.render(scene, camera)
@@ -146,8 +203,8 @@ export default function DancingCharacter({ position = 'left', size = 300 }: Danc
   }, [size])
 
   const positionClass = position === 'left' 
-    ? 'left-0 lg:left-[320px]' 
-    : 'right-0'
+    ? 'left-4 lg:left-[340px]' 
+    : 'right-4'
 
   if (error) return null
 
@@ -157,7 +214,7 @@ export default function DancingCharacter({ position = 'left', size = 300 }: Danc
         initial={{ opacity: 0, x: position === 'left' ? -50 : 50 }}
         animate={{ opacity: loaded ? 1 : 0, x: 0 }}
         transition={{ duration: 0.8, delay: 2 }}
-        className={`fixed bottom-0 ${positionClass} z-5 pointer-events-none hidden lg:block`}
+        className={`fixed bottom-[200px] ${positionClass} z-20 pointer-events-none hidden lg:block`}
         style={{ width: size, height: size * 1.5 }}
       >
         <div 
@@ -168,22 +225,8 @@ export default function DancingCharacter({ position = 'left', size = 300 }: Danc
           }}
         />
         
-        {/* Speech bubble */}
-        {loaded && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 3, duration: 0.5 }}
-            className="absolute top-10 left-1/2 -translate-x-1/2 bg-white rounded-xl px-4 py-2 shadow-lg"
-          >
-            <p className="text-xs font-medium text-text-primary whitespace-nowrap">
-              $921B in fraud! 💰
-            </p>
-            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 
-              border-l-8 border-r-8 border-t-8 
-              border-l-transparent border-r-transparent border-t-white" />
-          </motion.div>
-        )}
+        {/* Speech bubble - right at the head, rotating hilarious fraud quotes */}
+        {loaded && <FraudQuoteBubble />}
       </motion.div>
     </AnimatePresence>
   )

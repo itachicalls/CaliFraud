@@ -158,24 +158,25 @@ export default function CaliforniaMap() {
         data: casePoints as any,
       })
 
-      // Heatmap layer
+      // Heatmap layer - dark blue to purple where fraud is most prevalent
       map.addLayer({
         id: 'fraud-heat',
         type: 'heatmap',
         source: 'fraud',
         paint: {
           'heatmap-weight': ['interpolate', ['linear'], ['get', 'amount_exposed'],
-            0, 0, 100000, 0.3, 1000000, 0.5, 10000000, 0.8, 100000000, 1],
-          'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 4, 0.3, 8, 1],
+            0, 0, 100000, 0.35, 1000000, 0.55, 10000000, 0.85, 100000000, 1],
+          'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 4, 0.6, 6, 0.85, 8, 1],
           'heatmap-color': ['interpolate', ['linear'], ['heatmap-density'],
-            0, 'rgba(255,248,220,0)',
-            0.2, 'rgba(255,243,180,0.5)',
-            0.4, 'rgba(246,180,0,0.7)',
-            0.6, 'rgba(255,122,24,0.8)',
-            0.8, 'rgba(215,38,56,0.9)',
-            1, 'rgba(180,20,40,1)'],
-          'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 4, 25, 8, 50, 12, 80],
-          'heatmap-opacity': ['interpolate', ['linear'], ['zoom'], 6, 0.9, 11, 0.5],
+            0, 'rgba(59, 130, 246, 0)',
+            0.15, 'rgba(59, 130, 246, 0.35)',
+            0.3, 'rgba(99, 102, 241, 0.5)',
+            0.5, 'rgba(129, 140, 248, 0.7)',
+            0.7, 'rgba(139, 92, 246, 0.85)',
+            0.9, 'rgba(126, 34, 206, 0.95)',
+            1, 'rgba(88, 28, 135, 1)'],
+          'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 4, 30, 6, 45, 8, 60, 12, 90],
+          'heatmap-opacity': ['interpolate', ['linear'], ['zoom'], 4, 0.7, 6, 0.9, 11, 0.85, 14, 0.8],
         },
       })
 
@@ -299,7 +300,7 @@ export default function CaliforniaMap() {
         )}
       </AnimatePresence>
 
-      {/* Fraud intensity legend - responsive positioning */}
+      {/* Fraud intensity legend - blue to purple gradient */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -308,7 +309,7 @@ export default function CaliforniaMap() {
           bottom-36 right-4 md:bottom-28"
       >
         <p className="text-xs font-semibold text-gray-600 mb-2">Fraud Intensity</p>
-        <div className="w-20 h-2.5 rounded-full" style={{ background: 'linear-gradient(to right, #FFF3C4, #F6B400, #FF7A18, #D72638)' }} />
+        <div className="w-24 h-2.5 rounded-full" style={{ background: 'linear-gradient(to right, rgba(59,130,246,0.4), rgba(99,102,241,0.7), rgba(139,92,246,0.9), rgba(88,28,135,1))' }} />
         <div className="flex justify-between mt-1 text-[10px] text-gray-400">
           <span>Low</span>
           <span>High</span>

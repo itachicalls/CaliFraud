@@ -20,6 +20,8 @@ export function useCase(id: number | null) {
     queryKey: ['case', id],
     queryFn: () => (id ? casesAPI.get(id) : null),
     enabled: id !== null,
+    staleTime: 0,
+    refetchOnMount: 'always',
   })
 }
 
@@ -92,6 +94,47 @@ export function useSchemeTypes() {
     queryKey: ['schemeTypes'],
     queryFn: () => casesAPI.getSchemeTypes(),
     staleTime: Infinity,
+  })
+}
+
+export function useTypologies() {
+  return useQuery({
+    queryKey: ['typologies'],
+    queryFn: () => casesAPI.getTypologies(),
+    staleTime: Infinity,
+  })
+}
+
+export function useEnforcementLag(params?: { group_by?: string; scheme_type?: string; county?: string }) {
+  const filters = useFilterStore((state) => state.getActiveFilters())
+  return useQuery({
+    queryKey: ['enforcementLag', { ...params, ...filters }],
+    queryFn: () =>
+      analyticsAPI.enforcementLag({
+        group_by: params?.group_by || 'county',
+        scheme_type: params?.scheme_type || (filters.scheme_type as string),
+        county: params?.county || (filters.county as string),
+      }),
+  })
+}
+
+export function useRiskIndex(params?: { by?: string }) {
+  const filters = useFilterStore((state) => state.getActiveFilters())
+  return useQuery({
+    queryKey: ['riskIndex', { ...params, ...filters }],
+    queryFn: () =>
+      analyticsAPI.riskIndex({
+        by: params?.by || 'county',
+        scheme_type: filters.scheme_type as string,
+        county: filters.county as string,
+      }),
+  })
+}
+
+export function useEntityNetwork(params?: { min_cases?: number }) {
+  return useQuery({
+    queryKey: ['entityNetwork', params],
+    queryFn: () => analyticsAPI.entityNetwork({ min_cases: params?.min_cases ?? 2 }),
   })
 }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { Prisma } from '@prisma/client'
+import { SCHEME_TO_TYPOLOGY } from '@/lib/typology'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -10,6 +11,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     
     const schemeType = searchParams.get('scheme_type')
+    const typology = searchParams.get('typology')
     const startDate = searchParams.get('start_date')
     const endDate = searchParams.get('end_date')
     const minAmount = searchParams.get('min_amount')
@@ -21,6 +23,12 @@ export async function GET(request: NextRequest) {
     }
 
     if (schemeType) where.schemeType = schemeType
+    if (typology) {
+      const schemeTypes = Object.entries(SCHEME_TO_TYPOLOGY)
+        .filter(([, t]) => t === typology)
+        .map(([s]) => s)
+      if (schemeTypes.length > 0) where.schemeType = { in: schemeTypes }
+    }
     if (startDate) where.dateFiled = { gte: new Date(startDate) }
     if (endDate) {
       where.dateFiled = {

@@ -3,8 +3,20 @@
 import { motion } from 'framer-motion'
 import { clsx } from 'clsx'
 import { SCHEME_COLORS } from '@/lib/design-tokens'
-import { useSchemeTypes } from '@/hooks/useFraudData'
+import { useSchemeTypes, useTypologies } from '@/hooks/useFraudData'
 import { useFilterStore } from '@/stores/filters'
+
+const TYPOLOGY_COLORS: Record<string, string> = {
+  healthcare: '#D72638',
+  relief: '#FF7A18',
+  tax: '#8B5CF6',
+  employment: '#1E6FFF',
+  kickbacks: '#EC4899',
+  shell_entities: '#6B7280',
+  benefits: '#F6B400',
+  government_contracts: '#2E5E4E',
+  insurance: '#14B8A6',
+}
 
 function formatSchemeType(type: string): string {
   return type
@@ -53,8 +65,13 @@ function Chip({ label, color, isSelected, onClick }: ChipProps) {
 
 export default function FilterChips() {
   const { data: schemeTypes, isLoading } = useSchemeTypes()
+  const { data: typologies, isLoading: typologiesLoading } = useTypologies()
   const schemeType = useFilterStore((state) => state.schemeType)
+  const typology = useFilterStore((state) => state.typology)
+  const stillOperating = useFilterStore((state) => state.stillOperating)
   const setSchemeType = useFilterStore((state) => state.setSchemeType)
+  const setTypology = useFilterStore((state) => state.setTypology)
+  const setStillOperating = useFilterStore((state) => state.setStillOperating)
 
   if (isLoading) {
     return (
@@ -72,24 +89,63 @@ export default function FilterChips() {
   }
 
   return (
-    <div className="p-4">
-      <h3 className="text-sm font-medium text-text-secondary mb-3">Scheme Type</h3>
-      <div className="flex flex-wrap gap-2">
-        <Chip
-          label="All Types"
-          color="#6B7280"
-          isSelected={schemeType === null}
-          onClick={() => setSchemeType(null)}
-        />
-        {schemeTypes?.map((type) => (
+    <div className="p-4 space-y-4">
+      {/* Typology */}
+      <div>
+        <h3 className="text-sm font-medium text-text-secondary mb-3">Typology</h3>
+        <div className="flex flex-wrap gap-2">
           <Chip
-            key={type}
-            label={formatSchemeType(type)}
-            color={SCHEME_COLORS[type] || '#6B7280'}
-            isSelected={schemeType === type}
-            onClick={() => setSchemeType(schemeType === type ? null : type)}
+            label="All"
+            color="#6B7280"
+            isSelected={typology === null}
+            onClick={() => setTypology(null)}
           />
-        ))}
+          {!typologiesLoading &&
+            typologies?.map((t) => (
+              <Chip
+                key={t.value}
+                label={t.label}
+                color={TYPOLOGY_COLORS[t.value] || '#6B7280'}
+                isSelected={typology === t.value}
+                onClick={() => setTypology(typology === t.value ? null : t.value)}
+              />
+            ))}
+        </div>
+      </div>
+
+      {/* Scheme Type */}
+      <div>
+        <h3 className="text-sm font-medium text-text-secondary mb-3">Scheme Type</h3>
+        <div className="flex flex-wrap gap-2">
+          <Chip
+            label="All Types"
+            color="#6B7280"
+            isSelected={schemeType === null}
+            onClick={() => setSchemeType(null)}
+          />
+          {schemeTypes?.map((type) => (
+            <Chip
+              key={type}
+              label={formatSchemeType(type)}
+              color={SCHEME_COLORS[type] || '#6B7280'}
+              isSelected={schemeType === type}
+              onClick={() => setSchemeType(schemeType === type ? null : type)}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Still Operating */}
+      <div>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={stillOperating === true}
+            onChange={(e) => setStillOperating(e.target.checked ? true : null)}
+            className="rounded border-california-border"
+          />
+          <span className="text-sm text-text-primary">Still operating (sanctioned)</span>
+        </label>
       </div>
     </div>
   )

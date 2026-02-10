@@ -100,15 +100,35 @@ export default function CaseDetailPanel() {
                   <div>
                     {/* Header */}
                     <div className="mb-6">
-                      <div className="flex items-start justify-between gap-4 mb-2">
+                      <div className="flex items-start justify-between gap-4 mb-2 flex-wrap">
                         <h2 className="text-xl font-semibold text-text-primary leading-tight">
                           {caseData.title}
                         </h2>
-                        <StatusBadge status={caseData.status} />
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <StatusBadge status={caseData.status} />
+                          {caseData.still_operating && (
+                            <span
+                              className="px-2 py-0.5 rounded-full text-xs font-medium bg-fraud-critical/20 text-fraud-critical"
+                              title={caseData.still_operating_source || 'Entity remains licensed or billing'}
+                            >
+                              Still operating
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <p className="text-sm text-text-secondary">
                         Case #{caseData.case_number}
                       </p>
+                      {caseData.still_operating_source && (
+                        <a
+                          href={caseData.still_operating_source}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-california-pacific hover:underline mt-1 inline-block"
+                        >
+                          Source: provider/license search
+                        </a>
+                      )}
                     </div>
 
                     {/* Amount */}
@@ -197,6 +217,31 @@ export default function CaseDetailPanel() {
                           </div>
                         )}
                       </div>
+
+                      {/* Linked entities (recidivism) */}
+                      {(caseData.linked_entities?.length ?? 0) > 0 && (
+                        <>
+                          <div className="border-t border-california-border pt-4" />
+                          <div>
+                            <h3 className="text-sm font-medium text-text-secondary mb-2">
+                              Linked entities
+                            </h3>
+                            <ul className="space-y-1">
+                              {caseData.linked_entities!.map((e) => (
+                                <li key={e.id} className="text-sm text-text-primary">
+                                  {e.name}
+                                  {e.entity_type && (
+                                    <span className="text-text-tertiary ml-1">({e.entity_type})</span>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                            <p className="text-xs text-text-tertiary mt-1">
+                              Same entity linked to multiple cases (recidivism)
+                            </p>
+                          </div>
+                        </>
+                      )}
 
                       {/* Source link */}
                       {caseData.source_url && (

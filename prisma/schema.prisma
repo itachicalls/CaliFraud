@@ -9,28 +9,69 @@ datasource db {
 }
 
 model FraudCase {
-  id              Int       @id @default(autoincrement())
-  caseNumber      String    @unique @map("case_number")
-  title           String
-  description     String?
-  schemeType      String    @map("scheme_type")
-  amountExposed   Decimal?  @map("amount_exposed") @db.Decimal(18, 2)
-  amountRecovered Decimal?  @map("amount_recovered") @db.Decimal(18, 2)
-  dateFiled       DateTime? @map("date_filed")
-  dateResolved    DateTime? @map("date_resolved")
-  status          String    @default("open")
-  county          String
-  city            String?
-  latitude        Decimal?  @db.Decimal(10, 7)
-  longitude       Decimal?  @db.Decimal(10, 7)
-  sourceUrl       String?   @map("source_url")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  id                  Int       @id @default(autoincrement())
+  caseNumber          String    @unique @map("case_number")
+  title               String
+  description         String?
+  schemeType          String    @map("scheme_type")
+  typology            String?   // healthcare, relief, tax, employment, kickbacks, shell_entities, benefits, government_contracts, insurance
+  amountExposed       Decimal?  @map("amount_exposed") @db.Decimal(18, 2)
+  amountRecovered     Decimal?  @map("amount_recovered") @db.Decimal(18, 2)
+  dateFiled           DateTime? @map("date_filed")
+  dateResolved        DateTime? @map("date_resolved")
+  dateAlleged         DateTime? @map("date_alleged") // alleged misconduct start (for enforcement lag)
+  enforcingAgency     String?   @map("enforcing_agency")
+  status              String    @default("open")
+  county              String
+  city                String?
+  latitude            Decimal?  @db.Decimal(10, 7)
+  longitude           Decimal?  @db.Decimal(10, 7)
+  sourceUrl           String?   @map("source_url")
+  stillOperating      Boolean   @default(false) @map("still_operating")
+  stillOperatingSource String?  @map("still_operating_source")
+  entityNames         Json?     @map("entity_names") // ["Provider LLC", "John Doe"] - public record names
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  caseEntities CaseEntity[]
 
   @@index([schemeType])
+  @@index([typology])
   @@index([county])
   @@index([status])
   @@index([dateFiled])
   @@index([amountExposed])
+  @@index([stillOperating])
   @@map("fraud_cases")
+}
+
+model Entity {
+  id          Int      @id @default(autoincrement())
+  name        String
+  entityType  String   @map("entity_type") // provider, business, individual, npi, ein
+  npi         String?  @unique
+  ein         String?
+  address     String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  caseEntities CaseEntity[]
+
+  @@index([name])
+  @@index([npi])
+  @@index([ein])
+  @@map("entities")
+}
+
+model CaseEntity {
+  id        Int       @id @default(autoincrement())
+  caseId    Int       @map("case_id")
+  entityId  Int       @map("entity_id")
+  role      String?   // defendant, provider, billing_entity, officer
+
+  case   FraudCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  entity Entity    @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@unique([caseId, entityId])
+  @@index([entityId])
+  @@map("case_entities")
 }

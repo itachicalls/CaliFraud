@@ -6,6 +6,7 @@ import KPICards from './KPICards'
 import FilterChips from './FilterChips'
 import RangeSliders from './RangeSliders'
 import DatePicker from './DatePicker'
+import { AnalyticsPanel } from '@/components/analytics'
 
 export default function CommandPanel() {
   const sidebarOpen = useFilterStore((state) => state.sidebarOpen)
@@ -71,6 +72,8 @@ export default function CommandPanel() {
               <RangeSliders />
 
               <DatePicker />
+
+              <AnalyticsPanel />
             </div>
 
             {/* Footer */}

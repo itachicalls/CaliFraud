@@ -5,26 +5,25 @@ import { CommandPanel, MobileNav } from '@/components/sidebar'
 import { TimeScrubber, MobileTimeScrubber } from '@/components/timeline'
 import { CaseDetailPanel } from '@/components/modal'
 import { SkipLink } from '@/components/ui'
+import { NewsFeed, TwitterFeed } from '@/components/feeds'
 
-// Dynamic import for map to avoid SSR issues with Mapbox
-const CaliforniaMap = dynamic(
-  () => import('@/components/map/CaliforniaMap'),
-  { 
+const MainTabs = dynamic(
+  () => import('@/components/tabs/MainTabs'),
+  {
     ssr: false,
     loading: () => (
       <div className="w-full h-full flex items-center justify-center bg-california-sand">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-california-poppy border-t-transparent rounded-full animate-spin" />
-          <p className="text-text-secondary text-sm">Loading California map...</p>
+          <p className="text-text-secondary text-sm">Loading...</p>
         </div>
       </div>
-    )
+    ),
   }
 )
 
-// Dynamic import for 3D character to avoid SSR issues with Three.js
-const DancingCharacter = dynamic(
-  () => import('@/components/3d/DancingCharacter'),
+const FraudChat = dynamic(
+  () => import('@/components/chat/FraudChat'),
   { ssr: false }
 )
 
@@ -33,9 +32,9 @@ export default function HomePage() {
     <>
       <SkipLink />
       <main id="main-content" className="h-screen w-screen overflow-hidden bg-california-sand">
-        {/* Map background */}
-        <div className="absolute inset-0 w-full h-full" role="application" aria-label="California fraud map">
-          <CaliforniaMap />
+        {/* Main content: Map, Overview, Accountability Tracker tabs */}
+        <div className="absolute inset-0 w-full h-full" role="main">
+          <MainTabs />
         </div>
 
         {/* Desktop Command Panel (Sidebar) */}
@@ -59,9 +58,9 @@ export default function HomePage() {
         {/* Case Detail Modal */}
         <CaseDetailPanel />
 
-        {/* Insight Callout - hidden on mobile */}
-        <div className="fixed top-4 right-4 z-10 max-w-xs hidden lg:block">
-          <div 
+        {/* Right panel: Insight + News + Twitter - hidden on mobile */}
+        <div className="fixed top-4 right-4 z-10 w-80 max-h-[calc(100vh-2rem)] overflow-y-auto space-y-4 hidden lg:block">
+          <div
             className="bg-white/95 backdrop-blur-sm rounded-card shadow-card border border-california-border p-4"
             role="complementary"
             aria-label="Data insight"
@@ -72,10 +71,12 @@ export default function HomePage() {
               surged during 2020-2021, coinciding with the pandemic.
             </p>
           </div>
+          <NewsFeed />
+          <TwitterFeed />
         </div>
 
-        {/* 3D Dancing Character - Pacific Ocean side */}
-        <DancingCharacter position="left" size={250} />
+        {/* Fraud Chat */}
+        <FraudChat />
       </main>
     </>
   )

@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useCallback } from 'react'
-import { motion } from 'framer-motion'
+import { useEffect, useRef, useCallback, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useTimeline } from '@/hooks/useFraudData'
 import { useFilterStore } from '@/stores/filters'
 import { formatCurrency } from '@/lib/design-tokens'
@@ -9,6 +9,7 @@ import { formatCurrency } from '@/lib/design-tokens'
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 export default function TimeScrubber() {
+  const [collapsed, setCollapsed] = useState(false)
   const { data: timeline, isLoading } = useTimeline()
   const currentPeriod = useFilterStore((state) => state.currentPeriod)
   const setCurrentPeriod = useFilterStore((state) => state.setCurrentPeriod)
@@ -141,24 +142,28 @@ export default function TimeScrubber() {
       aria-label="Time navigation"
     >
       <div className="max-w-4xl mx-auto lg:ml-80">
-        <div className="glass rounded-card p-4 shadow-panel">
-          {/* Timelapse instruction - show when idle */}
-          {!isPlaying && !currentPeriod && (
-            <p className="text-xs text-text-secondary mb-2 text-center">
-              <span className="font-medium text-california-poppy">CaliFraud Timelapse:</span>{' '}
-              Press play to see how the total fraud in California has accumulated over time
-            </p>
-          )}
-
-          {/* Header */}
-          <div className="flex items-center justify-between mb-3">
+        <div className="glass rounded-card shadow-panel overflow-hidden">
+          {/* Collapsed header - always visible */}
+          <button
+            onClick={() => setCollapsed((c) => !c)}
+            className="w-full flex items-center justify-between p-4 hover:bg-white/50 transition-colors text-left"
+            aria-expanded={!collapsed}
+          >
             <div className="flex items-center gap-3">
-              {/* Play/Pause button */}
+              <span className="text-california-poppy">
+                {collapsed ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="18 15 12 9 6 15" />
+                  </svg>
+                )}
+              </span>
               <button
-                onClick={isPlaying ? stopPlayback : startPlayback}
-                className="w-10 h-10 flex items-center justify-center rounded-full
-                  bg-california-poppy text-white shadow-md
-                  hover:bg-california-sunset transition-colors"
+                onClick={(e) => { e.stopPropagation(); isPlaying ? stopPlayback() : startPlayback() }}
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-california-poppy text-white shadow-md hover:bg-california-sunset transition-colors"
                 aria-label={isPlaying ? 'Pause' : 'Play'}
               >
                 {isPlaying ? (
@@ -172,37 +177,43 @@ export default function TimeScrubber() {
                   </svg>
                 )}
               </button>
-
-              {/* Current period display */}
               <div>
-                {currentPeriod ? (
-                  <>
-                    <p className="text-sm font-medium text-text-primary">
-                      {MONTHS[parseInt(currentPeriod.split('-')[1]) - 1]}{' '}
-                      {currentPeriod.split('-')[0]}
-                    </p>
-                    {currentData && (
-                      <p className="text-xs text-text-secondary">
-                        {currentData.case_count.toLocaleString()} cases •{' '}
-                        {formatCurrency(currentData.total_exposed)}
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <p className="text-sm font-medium text-text-primary">
-                      2020 – 2026
-                    </p>
-                    <p className="text-xs text-text-secondary">
-                      {timeline.reduce((sum, t) => sum + t.case_count, 0).toLocaleString()} cases •{' '}
-                      {formatCurrency(timeline.reduce((sum, t) => sum + t.total_exposed, 0))}
-                    </p>
-                  </>
-                )}
+                <p className="text-sm font-medium text-text-primary">
+                  CaliFraud Timelapse
+                </p>
+                <p className="text-xs text-text-secondary">
+                  {currentPeriod
+                    ? `${MONTHS[parseInt(currentPeriod.split('-')[1]) - 1]} ${currentPeriod.split('-')[0]} • ${formatCurrency(currentData?.total_exposed ?? 0)}`
+                    : `2020 – 2026 • ${timeline.reduce((sum, t) => sum + t.case_count, 0).toLocaleString()} cases • ${formatCurrency(totalFraud)}`}
+                </p>
               </div>
             </div>
+            {collapsed && (
+              <span className="text-xs text-text-tertiary">Click to expand</span>
+            )}
+          </button>
 
-            {/* Reset button - only show when a period is selected */}
+          {/* Expandable content */}
+          <AnimatePresence initial={false}>
+            {!collapsed && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="border-t border-white/30"
+              >
+                <div className="p-4 pt-3">
+          {/* Timelapse instruction - show when idle */}
+          {!isPlaying && !currentPeriod && (
+            <p className="text-xs text-text-secondary mb-2 text-center">
+              <span className="font-medium text-california-poppy">CaliFraud Timelapse:</span>{' '}
+              Press play to see how the total fraud in California has accumulated over time
+            </p>
+          )}
+
+          {/* Reset button - only show when a period is selected */}
+          <div className="flex justify-end mb-3">
             {currentPeriod && (
               <button
                 onClick={resetToAllTime}
@@ -299,6 +310,10 @@ export default function TimeScrubber() {
               </span>
             ))}
           </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </motion.div>
