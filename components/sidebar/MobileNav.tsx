@@ -45,6 +45,35 @@ function MobileKPIBar() {
   )
 }
 
+const CA_ADDRESS = '39wKUzueHdG2nHGGk7rAPNuFkwTVLr4xqECjF1uopump'
+
+function MobileCopyCA() {
+  const [copied, setCopied] = useState(false)
+  const handleCopy = () => {
+    navigator.clipboard.writeText(CA_ADDRESS)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
+  return (
+    <button
+      onClick={handleCopy}
+      className="mt-0.5 flex items-center gap-1 group cursor-pointer text-left"
+      title="Click to copy address"
+    >
+      <span className="text-[11px] text-text-tertiary font-mono break-all leading-snug select-all">
+        ca: {CA_ADDRESS}
+      </span>
+      <span className="flex-shrink-0 text-text-tertiary group-hover:text-california-pacific transition-colors">
+        {copied ? (
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-green-500"><path d="M20 6L9 17l-5-5"/></svg>
+        ) : (
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        )}
+      </span>
+    </button>
+  )
+}
+
 export default function MobileNav() {
   const [isOpen, setIsOpen] = useState(false)
   const [showStats, setShowStats] = useState(false)
@@ -88,7 +117,7 @@ export default function MobileNav() {
               <div>
                 <h1 className="text-base font-bold text-text-primary">CaliFraud</h1>
                 <p className="text-[10px] text-text-secondary -mt-0.5">Intelligence Platform</p>
-                <p className="text-[9px] text-text-tertiary font-mono truncate max-w-[140px]" title="ca: 39wKUzueHdG2nHGGk7rAPNuFkwTVLr4xqECjF1uopump">ca: 39wKUzueHdG2nHGGk7rAPNuFkwTVLr4xqECjF1uopump</p>
+                <MobileCopyCA />
               </div>
             </div>
             

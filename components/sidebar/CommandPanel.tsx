@@ -1,12 +1,42 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
+import { useState } from 'react'
 import { useFilterStore } from '@/stores/filters'
 import KPICards from './KPICards'
 import FilterChips from './FilterChips'
 import RangeSliders from './RangeSliders'
 import DatePicker from './DatePicker'
 import { AnalyticsPanel } from '@/components/analytics'
+
+const CA_ADDRESS = '39wKUzueHdG2nHGGk7rAPNuFkwTVLr4xqECjF1uopump'
+
+function CopyCA() {
+  const [copied, setCopied] = useState(false)
+  const handleCopy = () => {
+    navigator.clipboard.writeText(CA_ADDRESS)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
+  return (
+    <button
+      onClick={handleCopy}
+      className="mt-1 flex items-center gap-1.5 group cursor-pointer w-full text-left"
+      title="Click to copy address"
+    >
+      <span className="text-xs text-text-tertiary font-mono break-all leading-snug select-all">
+        ca: {CA_ADDRESS}
+      </span>
+      <span className="flex-shrink-0 text-[10px] text-text-tertiary group-hover:text-california-pacific transition-colors">
+        {copied ? (
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-green-500"><path d="M20 6L9 17l-5-5"/></svg>
+        ) : (
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        )}
+      </span>
+    </button>
+  )
+}
 
 export default function CommandPanel() {
   const sidebarOpen = useFilterStore((state) => state.sidebarOpen)
@@ -34,9 +64,7 @@ export default function CommandPanel() {
                     CaliFraud
                   </h1>
                   <p className="text-sm text-text-secondary">Intelligence Platform</p>
-                  <p className="text-[10px] text-text-tertiary font-mono mt-0.5 truncate max-w-[200px]" title="ca: 39wKUzueHdG2nHGGk7rAPNuFkwTVLr4xqECjF1uopump">
-                    ca: 39wKUzueHdG2nHGGk7rAPNuFkwTVLr4xqECjF1uopump
-                  </p>
+                  <CopyCA />
                 </div>
                 <button
                   onClick={toggleSidebar}
