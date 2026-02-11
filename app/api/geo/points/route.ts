@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { Prisma } from '@prisma/client'
 import { SCHEME_TO_TYPOLOGY } from '@/lib/typology'
+import { getFallbackGeoPoints } from '@/lib/fallback-data'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -86,6 +87,20 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(geojson)
   } catch (error) {
     console.error('Geo points API error:', error)
-    return NextResponse.json({ type: 'FeatureCollection', features: [] })
+    try {
+      const { searchParams } = new URL(request.url)
+      return NextResponse.json(
+        getFallbackGeoPoints({
+          scheme_type: searchParams.get('scheme_type') ?? undefined,
+          typology: searchParams.get('typology') ?? undefined,
+          start_date: searchParams.get('start_date') ?? undefined,
+          end_date: searchParams.get('end_date') ?? undefined,
+          min_amount: searchParams.get('min_amount') ?? undefined,
+          max_amount: searchParams.get('max_amount') ?? undefined,
+        })
+      )
+    } catch {
+      return NextResponse.json({ type: 'FeatureCollection', features: [] })
+    }
   }
 }

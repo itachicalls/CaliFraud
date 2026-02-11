@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { getFallbackTimeline } from '@/lib/fallback-data'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -57,6 +58,10 @@ export async function GET(request: NextRequest) {
     )
   } catch (error) {
     console.error('Timeline API error:', error)
-    return NextResponse.json([])
+    try {
+      return NextResponse.json(getFallbackTimeline())
+    } catch {
+      return NextResponse.json([])
+    }
   }
 }

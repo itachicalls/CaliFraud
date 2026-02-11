@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { getFallbackCaseById } from '@/lib/fallback-data'
+import { getTypology } from '@/lib/typology'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -28,6 +30,32 @@ export async function GET(
     }
 
     if (!c) {
+      const fallback = getFallbackCaseById(caseId)
+      if (fallback) {
+        return NextResponse.json({
+          id: fallback.id,
+          case_number: fallback.caseNumber,
+          title: fallback.title,
+          description: fallback.description,
+          scheme_type: fallback.schemeType,
+          typology: getTypology(fallback.schemeType),
+          amount_exposed: fallback.amountExposed,
+          amount_recovered: fallback.amountRecovered,
+          date_filed: fallback.dateFiled,
+          date_resolved: fallback.dateResolved,
+          status: fallback.status,
+          county: fallback.county,
+          city: fallback.city,
+          latitude: fallback.latitude,
+          longitude: fallback.longitude,
+          source_url: null,
+          still_operating: fallback.status === 'open' || fallback.status === 'under_investigation',
+          still_operating_source: null,
+          entity_names: [],
+          linked_entities: [],
+          created_at: fallback.dateFiled ? `${fallback.dateFiled}T00:00:00.000Z` : new Date().toISOString(),
+        })
+      }
       return NextResponse.json({ error: 'Case not found' }, { status: 404 })
     }
 
@@ -68,6 +96,40 @@ export async function GET(
     })
   } catch (error) {
     console.error('Case API error:', error)
+    try {
+      const { id } = await params
+      const caseId = parseInt(id, 10)
+      if (!isNaN(caseId)) {
+        const fallback = getFallbackCaseById(caseId)
+        if (fallback) {
+          return NextResponse.json({
+            id: fallback.id,
+            case_number: fallback.caseNumber,
+            title: fallback.title,
+            description: fallback.description,
+            scheme_type: fallback.schemeType,
+            typology: getTypology(fallback.schemeType),
+            amount_exposed: fallback.amountExposed,
+            amount_recovered: fallback.amountRecovered,
+            date_filed: fallback.dateFiled,
+            date_resolved: fallback.dateResolved,
+            status: fallback.status,
+            county: fallback.county,
+            city: fallback.city,
+            latitude: fallback.latitude,
+            longitude: fallback.longitude,
+            source_url: null,
+            still_operating: fallback.status === 'open' || fallback.status === 'under_investigation',
+            still_operating_source: null,
+            entity_names: [],
+            linked_entities: [],
+            created_at: fallback.dateFiled ? `${fallback.dateFiled}T00:00:00.000Z` : new Date().toISOString(),
+          })
+        }
+      }
+    } catch {
+      /* ignore */
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

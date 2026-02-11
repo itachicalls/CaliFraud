@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { Prisma } from '@prisma/client'
 import { SCHEME_TO_TYPOLOGY } from '@/lib/typology'
+import { getFallbackCasesPaginated } from '@/lib/fallback-data'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -92,6 +93,25 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Cases API error:', error)
-    return NextResponse.json({ total: 0, cases: [], limit: 100, offset: 0 })
+    try {
+      const { searchParams } = new URL(request.url)
+      return NextResponse.json(
+        getFallbackCasesPaginated({
+          scheme_type: searchParams.get('scheme_type') ?? undefined,
+          typology: searchParams.get('typology') ?? undefined,
+          county: searchParams.get('county') ?? undefined,
+          start_date: searchParams.get('start_date') ?? undefined,
+          end_date: searchParams.get('end_date') ?? undefined,
+          still_operating: searchParams.get('still_operating') ?? undefined,
+          status: searchParams.get('status') ?? undefined,
+          min_amount: searchParams.get('min_amount') ?? undefined,
+          max_amount: searchParams.get('max_amount') ?? undefined,
+          limit: parseInt(searchParams.get('limit') || '100', 10),
+          offset: parseInt(searchParams.get('offset') || '0', 10),
+        })
+      )
+    } catch {
+      return NextResponse.json({ total: 0, cases: [], limit: 100, offset: 0 })
+    }
   }
 }

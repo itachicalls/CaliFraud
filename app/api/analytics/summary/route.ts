@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { Prisma } from '@prisma/client'
+import { getFallbackSummary } from '@/lib/fallback-data'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -69,13 +70,17 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Summary API error:', error)
-    return NextResponse.json({
-      total_cases: 0,
-      total_exposed: 0,
-      total_recovered: 0,
-      average_amount: 0,
-      recovery_rate: 0,
-      scheme_breakdown: [],
-    })
+    try {
+      return NextResponse.json(getFallbackSummary())
+    } catch {
+      return NextResponse.json({
+        total_cases: 0,
+        total_exposed: 0,
+        total_recovered: 0,
+        average_amount: 0,
+        recovery_rate: 0,
+        scheme_breakdown: [],
+      })
+    }
   }
 }

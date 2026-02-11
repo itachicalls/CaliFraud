@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { getFallbackSchemeTypes } from '@/lib/fallback-data'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -15,6 +16,10 @@ export async function GET() {
     return NextResponse.json(schemeTypes.map((s) => s.schemeType))
   } catch (error) {
     console.error('Scheme types API error:', error)
-    return NextResponse.json([])
+    try {
+      return NextResponse.json(getFallbackSchemeTypes())
+    } catch {
+      return NextResponse.json([])
+    }
   }
 }

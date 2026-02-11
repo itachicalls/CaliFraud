@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { Prisma } from '@prisma/client'
+import { getFallbackRiskIndex } from '@/lib/fallback-data'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -101,6 +102,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ by, results })
   } catch (error) {
     console.error('Risk index API error:', error)
-    return NextResponse.json({ by: 'county', results: [] })
+    try {
+      const { searchParams } = new URL(request.url)
+      const results = getFallbackRiskIndex({
+        by: searchParams.get('by') ?? undefined,
+        scheme_type: searchParams.get('scheme_type') ?? undefined,
+        county: searchParams.get('county') ?? undefined,
+      })
+      return NextResponse.json({ by: searchParams.get('by') || 'county', results })
+    } catch {
+      return NextResponse.json({ by: 'county', results: [] })
+    }
   }
 }

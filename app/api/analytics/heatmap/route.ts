@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { Prisma } from '@prisma/client'
+import { getFallbackHeatmap } from '@/lib/fallback-data'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -63,6 +64,17 @@ export async function GET(request: NextRequest) {
     )
   } catch (error) {
     console.error('Heatmap API error:', error)
-    return NextResponse.json([])
+    try {
+      const { searchParams } = new URL(request.url)
+      return NextResponse.json(
+        getFallbackHeatmap({
+          scheme_type: searchParams.get('scheme_type') ?? undefined,
+          start_date: searchParams.get('start_date') ?? undefined,
+          end_date: searchParams.get('end_date') ?? undefined,
+        })
+      )
+    } catch {
+      return NextResponse.json([])
+    }
   }
 }

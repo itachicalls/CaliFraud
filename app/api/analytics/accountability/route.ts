@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { Prisma } from '@prisma/client'
+import { getFallbackAccountability } from '@/lib/fallback-data'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -91,6 +92,21 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ total, rows, limit, offset })
   } catch (error) {
     console.error('Accountability API error:', error)
-    return NextResponse.json({ total: 0, rows: [], limit: 500, offset: 0 })
+    try {
+      const { searchParams } = new URL(request.url)
+      const result = getFallbackAccountability({
+        still_operating: searchParams.get('still_operating') ?? undefined,
+      })
+      const limit = Math.min(parseInt(searchParams.get('limit') || '500', 10), 2000)
+      const offset = parseInt(searchParams.get('offset') || '0', 10)
+      return NextResponse.json({
+        total: result.total,
+        rows: result.rows.slice(offset, offset + limit),
+        limit,
+        offset,
+      })
+    } catch {
+      return NextResponse.json({ total: 0, rows: [], limit: 500, offset: 0 })
+    }
   }
 }

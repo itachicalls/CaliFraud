@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { Prisma } from '@prisma/client'
+import { getFallbackEnforcementLag } from '@/lib/fallback-data'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -67,6 +68,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ group_by: groupBy, results })
   } catch (error) {
     console.error('Enforcement lag API error:', error)
-    return NextResponse.json({ group_by: 'county', results: [] })
+    try {
+      const { searchParams } = new URL(request.url)
+      const results = getFallbackEnforcementLag({
+        group_by: searchParams.get('group_by') ?? undefined,
+        scheme_type: searchParams.get('scheme_type') ?? undefined,
+        county: searchParams.get('county') ?? undefined,
+      })
+      return NextResponse.json({ group_by: searchParams.get('group_by') || 'county', results })
+    } catch {
+      return NextResponse.json({ group_by: 'county', results: [] })
+    }
   }
 }
