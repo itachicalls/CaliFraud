@@ -1,6 +1,6 @@
 /**
  * Static fallback data when database is unavailable (e.g. Neon quota exceeded).
- * Deterministic - same data every time. ~300 cases for map, stats, timeline.
+ * Deterministic - same data every time. ~1800 cases, ~$900B+ total exposed.
  */
 import { SCHEME_TO_TYPOLOGY } from '@/lib/typology'
 
@@ -76,7 +76,8 @@ export function getFallbackCases(): FallbackCase[] {
   const countyList = Object.keys(COUNTIES)
   const cases: FallbackCase[] = []
 
-  for (let i = 0; i < 320; i++) {
+  const N = 1800
+  for (let i = 0; i < N; i++) {
     const county = countyList[Math.floor(hash(i) * countyList.length)]
     const scheme = SCHEMES[Math.floor(hash(i + 100) * SCHEMES.length)]
     const cities = CITIES[county] || [county]
@@ -84,7 +85,8 @@ export function getFallbackCases(): FallbackCase[] {
     const [lat, lng] = COUNTIES[county]
     const year = 2020 + Math.floor(hash(i + 300) * 7)
     const month = 1 + Math.floor(hash(i + 400) * 12)
-    const amount = 50000 + hash(i + 500) * 50_000_000
+    // Scale: $80M–$1B per case → ~$900B+ total
+    const amount = 80_000_000 + hash(i + 500) * 920_000_000
     const status = STATUSES[Math.floor(hash(i + 600) * STATUSES.length)]
     const dateFiled = `${year}-${String(month).padStart(2, '0')}-15`
     const resolved = ['settled', 'convicted'].includes(status)
@@ -92,7 +94,7 @@ export function getFallbackCases(): FallbackCase[] {
 
     cases.push({
       id: i + 1,
-      caseNumber: `CA-${year}-${String(i + 1).padStart(5, '0')}`,
+      caseNumber: `CA-${year}-${String(i + 1).padStart(6, '0')}`,
       title: `${scheme.replace(/_/g, ' ')} - ${city}`,
       description: `Fraud case in ${city}, ${county} County.`,
       schemeType: scheme,
