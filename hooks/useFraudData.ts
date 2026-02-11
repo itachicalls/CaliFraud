@@ -73,6 +73,21 @@ export function useCasePoints() {
   })
 }
 
+/** Map always shows all cases (no date filter) so zoom reveals full 1800 */
+export function useMapCasePoints() {
+  const filters = useFilterStore((state) => state.getActiveFilters())
+  const mapFilters: CaseFilters = {
+    scheme_type: filters.scheme_type as string | undefined,
+    typology: filters.typology as string | undefined,
+    county: filters.county as string | undefined,
+  }
+
+  return useQuery({
+    queryKey: ['mapCasePoints', mapFilters],
+    queryFn: () => geoAPI.points(mapFilters),
+  })
+}
+
 export function useCounties() {
   return useQuery({
     queryKey: ['counties'],

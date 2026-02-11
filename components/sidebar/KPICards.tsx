@@ -92,14 +92,25 @@ function KPICard({ label, value, format, trend, delay = 0 }: KPICardProps) {
 }
 
 export default function KPICards() {
-  const { data: summary, isLoading } = useSummary()
+  const { data: summary, isLoading, isError } = useSummary()
 
-  if (isLoading || !summary) {
+  if (isLoading && !summary) {
     return (
       <div className="space-y-2 p-4">
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="h-20 bg-california-border/30 rounded-lg animate-pulse" />
         ))}
+      </div>
+    )
+  }
+
+  if (isError || !summary) {
+    return (
+      <div className="divide-y divide-california-border">
+        <KPICard label="Total Cases" value={0} format="number" delay={0} />
+        <KPICard label="Total Exposed" value={0} format="currency" delay={0.1} />
+        <KPICard label="Total Recovered" value={0} format="currency" delay={0.2} />
+        <KPICard label="Recovery Rate" value={0} format="percent" delay={0.3} />
       </div>
     )
   }

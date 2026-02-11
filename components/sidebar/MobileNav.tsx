@@ -88,6 +88,7 @@ export default function MobileNav() {
               <div>
                 <h1 className="text-base font-bold text-text-primary">CaliFraud</h1>
                 <p className="text-[10px] text-text-secondary -mt-0.5">Intelligence Platform</p>
+                <p className="text-[9px] text-text-tertiary font-mono truncate max-w-[140px]" title="ca: 39wKUzueHdG2nHGGk7rAPNuFkwTVLr4xqECjF1uopump">ca: 39wKUzueHdG2nHGGk7rAPNuFkwTVLr4xqECjF1uopump</p>
               </div>
             </div>
             

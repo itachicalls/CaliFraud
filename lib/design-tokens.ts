@@ -36,7 +36,7 @@ export const HEATMAP_COLORS = [
 
 // Scheme type colors
 export const SCHEME_COLORS: Record<string, string> = {
-  telemedicine: '#1E6FFF',  // Pacific blue
+  telemedicine: '#1E6FFF',   // Pacific blue
   pharmacy: '#2E5E4E',       // Redwood green
   dme: '#FF7A18',            // Sunset orange
   home_health: '#F6B400',    // Golden poppy
@@ -44,6 +44,11 @@ export const SCHEME_COLORS: Record<string, string> = {
   ambulance: '#EC4899',      // Pink
   hospice: '#14B8A6',        // Teal
   substance_abuse: '#D72638', // Crimson
+  edd_unemployment: '#F6B400', // Golden
+  ppp_fraud: '#FF7A18',       // Sunset orange
+  medi_cal: '#1E6FFF',        // Pacific blue
+  homeless_program: '#14B8A6', // Teal
+  contract_fraud: '#EC4899',   // Pink
 }
 
 // California bounds for map

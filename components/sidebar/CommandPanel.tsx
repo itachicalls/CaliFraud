@@ -34,6 +34,9 @@ export default function CommandPanel() {
                     CaliFraud
                   </h1>
                   <p className="text-sm text-text-secondary">Intelligence Platform</p>
+                  <p className="text-[10px] text-text-tertiary font-mono mt-0.5 truncate max-w-[200px]" title="ca: 39wKUzueHdG2nHGGk7rAPNuFkwTVLr4xqECjF1uopump">
+                    ca: 39wKUzueHdG2nHGGk7rAPNuFkwTVLr4xqECjF1uopump
+                  </p>
                 </div>
                 <button
                   onClick={toggleSidebar}

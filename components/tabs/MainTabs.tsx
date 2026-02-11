@@ -1,12 +1,15 @@
 'use client'
 
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import { motion, AnimatePresence } from 'framer-motion'
 import CaliforniaMap from '@/components/map/CaliforniaMap'
 import OverviewTab from './OverviewTab'
 import AccountabilityTrackerTab from './AccountabilityTrackerTab'
 
-type TabId = 'map' | 'overview' | 'accountability'
+const WebOfFraudTab = dynamic(() => import('./WebOfFraudTab'), { ssr: false })
+
+type TabId = 'map' | 'overview' | 'accountability' | 'web'
 
 export default function MainTabs() {
   const [activeTab, setActiveTab] = useState<TabId>('map')
@@ -14,6 +17,7 @@ export default function MainTabs() {
   const tabs: { id: TabId; label: string }[] = [
     { id: 'map', label: 'Map' },
     { id: 'overview', label: 'Overview' },
+    { id: 'web', label: 'Web of Fraud' },
     { id: 'accountability', label: 'Accountability Tracker' },
   ]
 
@@ -59,6 +63,17 @@ export default function MainTabs() {
               className="absolute inset-0 bg-california-sand overflow-auto"
             >
               <OverviewTab />
+            </motion.div>
+          )}
+          {activeTab === 'web' && (
+            <motion.div
+              key="web"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="absolute inset-0 bg-california-sand"
+            >
+              <WebOfFraudTab />
             </motion.div>
           )}
           {activeTab === 'accountability' && (

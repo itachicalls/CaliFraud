@@ -5,7 +5,7 @@ import { Map, NavigationControl, AttributionControl, GeoJSONSource } from 'mapli
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { motion, AnimatePresence } from 'framer-motion'
 import { colors, formatCurrency, SCHEME_COLORS } from '@/lib/design-tokens'
-import { useCasePoints, useCaliforniaOutline } from '@/hooks/useFraudData'
+import { useMapCasePoints, useCaliforniaOutline } from '@/hooks/useFraudData'
 import { useFilterStore } from '@/stores/filters'
 
 interface MapTooltip {
@@ -23,7 +23,7 @@ export default function CaliforniaMap() {
   const [ready, setReady] = useState(false)
   const [tooltip, setTooltip] = useState<MapTooltip | null>(null)
 
-  const { data: casePoints } = useCasePoints()
+  const { data: casePoints } = useMapCasePoints()
   const { data: californiaOutline } = useCaliforniaOutline()
   const openDetailPanel = useFilterStore((state) => state.openDetailPanel)
 
@@ -74,10 +74,10 @@ export default function CaliforniaMap() {
     map.on('load', () => {
       setReady(true)
       
-      // Different padding for mobile vs desktop
+      // Different padding for mobile vs desktop (content area is now right of sidebar)
       const padding = isMobile 
-        ? { top: 80, bottom: 140, left: 20, right: 20 }  // Mobile: account for header + bottom timeline
-        : { top: 50, bottom: 100, left: 340, right: 50 } // Desktop: account for sidebar
+        ? { top: 80, bottom: 140, left: 20, right: 20 }
+        : { top: 50, bottom: 100, left: 20, right: 80 }
       
       map.fitBounds([[-124.5, 32.5], [-114.0, 42.0]], {
         padding,
@@ -90,7 +90,7 @@ export default function CaliforniaMap() {
       const nowMobile = window.innerWidth < 768
       const padding = nowMobile 
         ? { top: 80, bottom: 140, left: 20, right: 20 }
-        : { top: 50, bottom: 100, left: 340, right: 50 }
+        : { top: 50, bottom: 100, left: 20, right: 80 }
       
       map.fitBounds([[-124.5, 32.5], [-114.0, 42.0]], {
         padding,
@@ -158,39 +158,46 @@ export default function CaliforniaMap() {
         data: casePoints as any,
       })
 
-      // Heatmap layer - dark blue to purple where fraud is most prevalent
+      // Heatmap — vivid thermal gradient (deep blue → cyan → green → yellow → orange → red/white)
       map.addLayer({
         id: 'fraud-heat',
         type: 'heatmap',
         source: 'fraud',
         paint: {
           'heatmap-weight': ['interpolate', ['linear'], ['get', 'amount_exposed'],
-            0, 0, 100000, 0.35, 1000000, 0.55, 10000000, 0.85, 100000000, 1],
-          'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 4, 0.6, 6, 0.85, 8, 1],
+            0, 0.05, 100000, 0.25, 1000000, 0.45, 10000000, 0.7, 100000000, 1],
+          'heatmap-intensity': ['interpolate', ['linear'], ['zoom'],
+            4, 0.8, 6, 1.2, 8, 1.6, 10, 1.8, 12, 2],
           'heatmap-color': ['interpolate', ['linear'], ['heatmap-density'],
-            0, 'rgba(59, 130, 246, 0)',
-            0.15, 'rgba(59, 130, 246, 0.35)',
-            0.3, 'rgba(99, 102, 241, 0.5)',
-            0.5, 'rgba(129, 140, 248, 0.7)',
-            0.7, 'rgba(139, 92, 246, 0.85)',
-            0.9, 'rgba(126, 34, 206, 0.95)',
-            1, 'rgba(88, 28, 135, 1)'],
-          'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 4, 30, 6, 45, 8, 60, 12, 90],
-          'heatmap-opacity': ['interpolate', ['linear'], ['zoom'], 4, 0.7, 6, 0.9, 11, 0.85, 14, 0.8],
+            0,    'rgba(0, 0, 30, 0)',
+            0.05, 'rgba(10, 20, 80, 0.35)',
+            0.12, 'rgba(20, 50, 160, 0.55)',
+            0.2,  'rgba(30, 100, 220, 0.7)',
+            0.3,  'rgba(0, 180, 220, 0.78)',
+            0.4,  'rgba(0, 210, 170, 0.82)',
+            0.5,  'rgba(50, 220, 100, 0.86)',
+            0.6,  'rgba(160, 230, 50, 0.9)',
+            0.7,  'rgba(230, 220, 30, 0.92)',
+            0.8,  'rgba(255, 170, 0, 0.94)',
+            0.9,  'rgba(255, 80, 0, 0.96)',
+            1,    'rgba(255, 30, 30, 1)'],
+          'heatmap-radius': ['interpolate', ['linear'], ['zoom'],
+            4, 35, 6, 55, 8, 80, 10, 110, 12, 140],
+          'heatmap-opacity': ['interpolate', ['linear'], ['zoom'],
+            4, 0.85, 7, 0.92, 10, 0.85, 13, 0.7, 15, 0.4],
         },
       })
 
-      // Circle markers (visible from state view so fallback cases show)
+      // Glow ring behind each point (visible when zoomed in)
       map.addLayer({
-        id: 'fraud-points',
+        id: 'fraud-points-glow',
         type: 'circle',
         source: 'fraud',
-        minzoom: 4,
+        minzoom: 8,
         paint: {
           'circle-radius': [
             'interpolate', ['linear'], ['zoom'],
-            4, ['interpolate', ['linear'], ['get', 'amount_exposed'], 0, 2, 1e6, 4, 1e7, 6, 1e8, 8],
-            7, ['interpolate', ['linear'], ['get', 'amount_exposed'], 0, 5, 1e6, 10, 1e7, 16, 1e8, 24],
+            8, 6, 10, 10, 12, 14, 14, 20,
           ],
           'circle-color': ['match', ['get', 'scheme_type'],
             'telemedicine', '#1E6FFF',
@@ -201,14 +208,49 @@ export default function CaliforniaMap() {
             'ambulance', '#EC4899',
             'hospice', '#14B8A6',
             'substance_abuse', '#D72638',
+            'edd_unemployment', '#F6B400',
+            'ppp_fraud', '#FF7A18',
+            'medi_cal', '#1E6FFF',
+            'homeless_program', '#14B8A6',
+            'contract_fraud', '#EC4899',
             '#1E6FFF'],
-          'circle-opacity': 0.85,
-          'circle-stroke-width': 2,
-          'circle-stroke-color': '#fff',
+          'circle-opacity': 0.18,
+          'circle-blur': 1,
         },
       })
 
-      // Desktop hover interactions
+      // Individual case circles - crisp dots on top
+      map.addLayer({
+        id: 'fraud-points',
+        type: 'circle',
+        source: 'fraud',
+        minzoom: 8,
+        paint: {
+          'circle-radius': [
+            'interpolate', ['linear'], ['zoom'],
+            8, 3, 10, 5, 12, 7, 14, 10,
+          ],
+          'circle-color': ['match', ['get', 'scheme_type'],
+            'telemedicine', '#1E6FFF',
+            'pharmacy', '#2E5E4E',
+            'dme', '#FF7A18',
+            'home_health', '#F6B400',
+            'lab_testing', '#8B5CF6',
+            'ambulance', '#EC4899',
+            'hospice', '#14B8A6',
+            'substance_abuse', '#D72638',
+            'edd_unemployment', '#F6B400',
+            'ppp_fraud', '#FF7A18',
+            'medi_cal', '#1E6FFF',
+            'homeless_program', '#14B8A6',
+            'contract_fraud', '#EC4899',
+            '#1E6FFF'],
+          'circle-opacity': 0.92,
+          'circle-stroke-width': 1.5,
+          'circle-stroke-color': 'rgba(255,255,255,0.9)',
+        },
+      })
+
       map.on('mouseenter', 'fraud-points', (e) => {
         map.getCanvas().style.cursor = 'pointer'
         const f = e.features?.[0]
@@ -216,10 +258,10 @@ export default function CaliforniaMap() {
           setTooltip({
             x: e.point.x,
             y: e.point.y,
-            title: f.properties.title || 'Case',
-            amount: f.properties.amount_exposed || 0,
-            county: f.properties.county || '',
-            schemeType: f.properties.scheme_type || '',
+            title: String(f.properties.title || 'Case'),
+            amount: Number(f.properties.amount_exposed || 0),
+            county: String(f.properties.county || ''),
+            schemeType: String(f.properties.scheme_type || ''),
           })
         }
       })
@@ -230,10 +272,10 @@ export default function CaliforniaMap() {
           setTooltip({
             x: e.point.x,
             y: e.point.y,
-            title: f.properties.title || 'Case',
-            amount: f.properties.amount_exposed || 0,
-            county: f.properties.county || '',
-            schemeType: f.properties.scheme_type || '',
+            title: String(f.properties.title || 'Case'),
+            amount: Number(f.properties.amount_exposed || 0),
+            county: String(f.properties.county || ''),
+            schemeType: String(f.properties.scheme_type || ''),
           })
         }
       })
@@ -243,27 +285,29 @@ export default function CaliforniaMap() {
         setTooltip(null)
       })
 
-      // Click/tap to open detail panel (works on both mobile and desktop)
+      map.on('mouseenter', 'fraud-heat', () => { map.getCanvas().style.cursor = 'pointer' })
+      map.on('mouseleave', 'fraud-heat', () => { map.getCanvas().style.cursor = '' })
+
       map.on('click', 'fraud-points', (e) => {
         const id = e.features?.[0]?.properties?.id
-        if (id) openDetailPanel(Number(id))
+        if (id != null) openDetailPanel(Number(id))
       })
 
-      // Also allow clicking on heatmap areas (mobile-friendly)
       map.on('click', 'fraud-heat', (e) => {
-        // Query for nearby points when clicking heatmap
         const features = map.queryRenderedFeatures(e.point, { layers: ['fraud-points'] })
         if (features.length > 0) {
           const id = features[0]?.properties?.id
-          if (id) openDetailPanel(Number(id))
+          if (id != null) openDetailPanel(Number(id))
+        } else {
+          map.easeTo({ center: e.lngLat, zoom: 9, duration: 500 })
         }
       })
     }
   }, [ready, casePoints, openDetailPanel])
 
   return (
-    <div className="relative w-full h-full" style={{ minHeight: '100vh' }}>
-      <div ref={containerRef} className="absolute inset-0" style={{ width: '100%', height: '100%' }} />
+    <div className="relative w-full h-full" style={{ minHeight: '50vh' }}>
+      <div ref={containerRef} className="absolute inset-0 w-full h-full" />
 
       <AnimatePresence>
         {!ready && (
@@ -303,19 +347,21 @@ export default function CaliforniaMap() {
         )}
       </AnimatePresence>
 
-      {/* Fraud intensity legend - blue to purple gradient */}
+      {/* Fraud intensity legend - accumulated sum */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 1 }}
         className="absolute z-10 bg-white/95 backdrop-blur rounded-xl shadow-lg border border-gray-100 p-3
-          bottom-36 right-4 md:bottom-28"
+          bottom-36 left-4 right-auto md:bottom-28"
       >
-        <p className="text-xs font-semibold text-gray-600 mb-2">Fraud Intensity</p>
-        <div className="w-24 h-2.5 rounded-full" style={{ background: 'linear-gradient(to right, rgba(59,130,246,0.4), rgba(99,102,241,0.7), rgba(139,92,246,0.9), rgba(88,28,135,1))' }} />
+        <p className="text-xs font-semibold text-gray-600 mb-2">
+          Fraud Intensity
+        </p>
+        <div className="w-32 h-3 rounded-full" style={{ background: 'linear-gradient(to right, #0a1450, #1e64dc, #00b4dc, #32dc64, #e6e61e, #ffaa00, #ff5000, #ff1e1e)' }} />
         <div className="flex justify-between mt-1 text-[10px] text-gray-400">
           <span>Low</span>
-          <span>High</span>
+          <span>Critical</span>
         </div>
       </motion.div>
     </div>

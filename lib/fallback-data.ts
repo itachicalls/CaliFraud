@@ -6,18 +6,36 @@ import { SCHEME_TO_TYPOLOGY } from '@/lib/typology'
 
 // County center + approximate radius (deg) for spreading points across the county
 const COUNTIES: Record<string, { center: [number, number]; radius: number }> = {
-  'Los Angeles': { center: [34.0522, -118.2437], radius: 0.8 },
-  'San Diego': { center: [32.7157, -117.1611], radius: 0.5 },
-  'Orange': { center: [33.7175, -117.8311], radius: 0.4 },
-  'Riverside': { center: [33.9806, -117.3755], radius: 0.6 },
-  'San Bernardino': { center: [34.1083, -117.2898], radius: 0.7 },
-  'Santa Clara': { center: [37.3541, -121.9552], radius: 0.4 },
-  'Alameda': { center: [37.8044, -122.2712], radius: 0.35 },
-  'Sacramento': { center: [38.5816, -121.4944], radius: 0.4 },
-  'San Francisco': { center: [37.7749, -122.4194], radius: 0.2 },
-  'Contra Costa': { center: [37.9161, -122.0574], radius: 0.35 },
-  'Fresno': { center: [36.7378, -119.7871], radius: 0.5 },
-  'Kern': { center: [35.3733, -119.0187], radius: 0.6 },
+  'Los Angeles':    { center: [34.0522, -118.2437], radius: 0.65 },
+  'San Diego':      { center: [32.7157, -117.1611], radius: 0.45 },
+  'Orange':         { center: [33.7175, -117.8311], radius: 0.3 },
+  'Riverside':      { center: [33.9806, -117.3755], radius: 0.55 },
+  'San Bernardino': { center: [34.1083, -117.2898], radius: 0.6 },
+  'Santa Clara':    { center: [37.3541, -121.9552], radius: 0.35 },
+  'Alameda':        { center: [37.8044, -122.2712], radius: 0.3 },
+  'Sacramento':     { center: [38.5816, -121.4944], radius: 0.4 },
+  'San Francisco':  { center: [37.7749, -122.4194], radius: 0.15 },
+  'Contra Costa':   { center: [37.9161, -122.0574], radius: 0.3 },
+  'Fresno':         { center: [36.7378, -119.7871], radius: 0.45 },
+  'Kern':           { center: [35.3733, -119.0187], radius: 0.55 },
+  'Ventura':        { center: [34.2746, -119.2290], radius: 0.35 },
+  'San Mateo':      { center: [37.5630, -122.3255], radius: 0.2 },
+  'San Joaquin':    { center: [37.9577, -121.2908], radius: 0.4 },
+  'Stanislaus':     { center: [37.5091, -120.9876], radius: 0.35 },
+  'Sonoma':         { center: [38.5110, -122.8111], radius: 0.35 },
+  'Tulare':         { center: [36.2077, -118.7815], radius: 0.45 },
+  'Santa Barbara':  { center: [34.4208, -119.6982], radius: 0.35 },
+  'Monterey':       { center: [36.6002, -121.8947], radius: 0.4 },
+  'Placer':         { center: [39.0916, -120.8039], radius: 0.4 },
+  'Solano':         { center: [38.2494, -121.9400], radius: 0.3 },
+  'Marin':          { center: [38.0834, -122.7633], radius: 0.2 },
+  'Merced':         { center: [37.3022, -120.4830], radius: 0.35 },
+  'Butte':          { center: [39.6635, -121.6006], radius: 0.35 },
+  'Shasta':         { center: [40.5865, -122.3917], radius: 0.45 },
+  'Imperial':       { center: [32.8476, -115.5693], radius: 0.45 },
+  'San Luis Obispo':{ center: [35.2828, -120.6596], radius: 0.4 },
+  'Humboldt':       { center: [40.7450, -123.8695], radius: 0.4 },
+  'El Dorado':      { center: [38.7846, -120.5257], radius: 0.35 },
 }
 
 const SCHEMES = [
@@ -32,25 +50,49 @@ const SCHEMES = [
 ] as const
 
 const CITIES: Record<string, string[]> = {
-  'Los Angeles': ['Los Angeles', 'Long Beach', 'Santa Monica'],
-  'San Diego': ['San Diego', 'Chula Vista'],
-  'Orange': ['Anaheim', 'Santa Ana', 'Irvine'],
-  'Riverside': ['Riverside', 'Corona'],
-  'San Bernardino': ['San Bernardino', 'Fontana'],
-  'Santa Clara': ['San Jose', 'Sunnyvale'],
-  'Alameda': ['Oakland', 'Berkeley'],
-  'Sacramento': ['Sacramento'],
-  'San Francisco': ['San Francisco'],
-  'Contra Costa': ['Concord', 'Richmond'],
-  'Fresno': ['Fresno'],
-  'Kern': ['Bakersfield'],
+  'Los Angeles':    ['Los Angeles', 'Long Beach', 'Santa Monica', 'Glendale', 'Pasadena', 'Torrance', 'Pomona', 'Compton', 'Downey'],
+  'San Diego':      ['San Diego', 'Chula Vista', 'Oceanside', 'Escondido', 'Carlsbad'],
+  'Orange':         ['Anaheim', 'Santa Ana', 'Irvine', 'Huntington Beach', 'Fullerton', 'Garden Grove'],
+  'Riverside':      ['Riverside', 'Corona', 'Moreno Valley', 'Temecula', 'Murrieta'],
+  'San Bernardino': ['San Bernardino', 'Fontana', 'Ontario', 'Rancho Cucamonga', 'Victorville'],
+  'Santa Clara':    ['San Jose', 'Sunnyvale', 'Santa Clara', 'Mountain View', 'Milpitas'],
+  'Alameda':        ['Oakland', 'Berkeley', 'Fremont', 'Hayward', 'Livermore'],
+  'Sacramento':     ['Sacramento', 'Elk Grove', 'Folsom', 'Citrus Heights'],
+  'San Francisco':  ['San Francisco'],
+  'Contra Costa':   ['Concord', 'Richmond', 'Walnut Creek', 'Antioch'],
+  'Fresno':         ['Fresno', 'Clovis', 'Sanger'],
+  'Kern':           ['Bakersfield', 'Delano', 'Wasco'],
+  'Ventura':        ['Ventura', 'Oxnard', 'Thousand Oaks', 'Simi Valley'],
+  'San Mateo':      ['San Mateo', 'Daly City', 'Redwood City'],
+  'San Joaquin':    ['Stockton', 'Tracy', 'Lodi', 'Manteca'],
+  'Stanislaus':     ['Modesto', 'Turlock', 'Ceres'],
+  'Sonoma':         ['Santa Rosa', 'Petaluma', 'Rohnert Park'],
+  'Tulare':         ['Visalia', 'Tulare', 'Porterville'],
+  'Santa Barbara':  ['Santa Barbara', 'Santa Maria', 'Lompoc'],
+  'Monterey':       ['Salinas', 'Monterey', 'Seaside'],
+  'Placer':         ['Roseville', 'Rocklin', 'Auburn'],
+  'Solano':         ['Vallejo', 'Fairfield', 'Vacaville'],
+  'Marin':          ['San Rafael', 'Novato'],
+  'Merced':         ['Merced', 'Los Banos'],
+  'Butte':          ['Chico', 'Oroville'],
+  'Shasta':         ['Redding', 'Anderson'],
+  'Imperial':       ['El Centro', 'Calexico'],
+  'San Luis Obispo':['San Luis Obispo', 'Paso Robles', 'Atascadero'],
+  'Humboldt':       ['Eureka', 'Arcata'],
+  'El Dorado':      ['Placerville', 'South Lake Tahoe'],
 }
 
 const STATUSES = ['open', 'under_investigation', 'charged', 'settled', 'convicted']
 
-// Deterministic "random" from index
+// Proper bit-mixing hash (splitmix32) — no linear artifacts
 function hash(i: number) {
-  return ((i * 2654435761) % 2 ** 32) / 2 ** 32
+  let x = (i | 0) + 0x9e3779b9
+  x ^= x >>> 16
+  x = Math.imul(x, 0x21f0aaad)
+  x ^= x >>> 15
+  x = Math.imul(x, 0x735a2d97)
+  x ^= x >>> 15
+  return (x >>> 0) / 0xffffffff
 }
 
 export interface FallbackCase {
@@ -95,11 +137,9 @@ export function getFallbackCases(): FallbackCase[] {
     const resolved = ['settled', 'convicted'].includes(status)
     const dateResolved = resolved ? `${year}-${String(month + 3).padStart(2, '0')}-01` : null
 
-    // Spread points across county: use radial distribution so all 1800 are visible when zoomed in
-    const angle = hash(i + 700) * Math.PI * 2
-    const r = Math.sqrt(hash(i + 800)) * radius
-    const dlat = r * Math.cos(angle)
-    const dlng = r * Math.sin(angle) * 0.8
+    // Spread points across county — proper hash means simple seeds work
+    const dlat = (hash(i + 7000) - 0.5) * 2 * radius
+    const dlng = (hash(i + 8000) - 0.5) * 2 * radius * 0.85
 
     cases.push({
       id: i + 1,

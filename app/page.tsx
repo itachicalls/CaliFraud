@@ -32,8 +32,8 @@ export default function HomePage() {
     <>
       <SkipLink />
       <main id="main-content" className="h-screen w-screen overflow-hidden bg-california-sand">
-        {/* Main content: Map, Overview, Accountability Tracker tabs */}
-        <div className="absolute inset-0 w-full h-full" role="main">
+        {/* Main content: Map, Overview, Accountability Tracker tabs - offset by sidebar on desktop */}
+        <div className="absolute inset-0 lg:left-80 top-0 right-0 bottom-0" role="main">
           <MainTabs />
         </div>
 
