@@ -180,15 +180,18 @@ export default function CaliforniaMap() {
         },
       })
 
-      // Circle markers
+      // Circle markers (visible from state view so fallback cases show)
       map.addLayer({
         id: 'fraud-points',
         type: 'circle',
         source: 'fraud',
-        minzoom: 7,
+        minzoom: 4,
         paint: {
-          'circle-radius': ['interpolate', ['linear'], ['get', 'amount_exposed'],
-            0, 5, 1000000, 10, 10000000, 16, 100000000, 24],
+          'circle-radius': [
+            'interpolate', ['linear'], ['zoom'],
+            4, ['interpolate', ['linear'], ['get', 'amount_exposed'], 0, 2, 1e6, 4, 1e7, 6, 1e8, 8],
+            7, ['interpolate', ['linear'], ['get', 'amount_exposed'], 0, 5, 1e6, 10, 1e7, 16, 1e8, 24],
+          ],
           'circle-color': ['match', ['get', 'scheme_type'],
             'telemedicine', '#1E6FFF',
             'pharmacy', '#2E5E4E',

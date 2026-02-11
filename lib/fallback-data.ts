@@ -4,19 +4,20 @@
  */
 import { SCHEME_TO_TYPOLOGY } from '@/lib/typology'
 
-const COUNTIES: Record<string, [number, number]> = {
-  'Los Angeles': [34.0522, -118.2437],
-  'San Diego': [32.7157, -117.1611],
-  'Orange': [33.7175, -117.8311],
-  'Riverside': [33.9806, -117.3755],
-  'San Bernardino': [34.1083, -117.2898],
-  'Santa Clara': [37.3541, -121.9552],
-  'Alameda': [37.8044, -122.2712],
-  'Sacramento': [38.5816, -121.4944],
-  'San Francisco': [37.7749, -122.4194],
-  'Contra Costa': [37.9161, -122.0574],
-  'Fresno': [36.7378, -119.7871],
-  'Kern': [35.3733, -119.0187],
+// County center + approximate radius (deg) for spreading points across the county
+const COUNTIES: Record<string, { center: [number, number]; radius: number }> = {
+  'Los Angeles': { center: [34.0522, -118.2437], radius: 0.8 },
+  'San Diego': { center: [32.7157, -117.1611], radius: 0.5 },
+  'Orange': { center: [33.7175, -117.8311], radius: 0.4 },
+  'Riverside': { center: [33.9806, -117.3755], radius: 0.6 },
+  'San Bernardino': { center: [34.1083, -117.2898], radius: 0.7 },
+  'Santa Clara': { center: [37.3541, -121.9552], radius: 0.4 },
+  'Alameda': { center: [37.8044, -122.2712], radius: 0.35 },
+  'Sacramento': { center: [38.5816, -121.4944], radius: 0.4 },
+  'San Francisco': { center: [37.7749, -122.4194], radius: 0.2 },
+  'Contra Costa': { center: [37.9161, -122.0574], radius: 0.35 },
+  'Fresno': { center: [36.7378, -119.7871], radius: 0.5 },
+  'Kern': { center: [35.3733, -119.0187], radius: 0.6 },
 }
 
 const SCHEMES = [
@@ -79,10 +80,12 @@ export function getFallbackCases(): FallbackCase[] {
   const N = 1800
   for (let i = 0; i < N; i++) {
     const county = countyList[Math.floor(hash(i) * countyList.length)]
+    const cfg = COUNTIES[county]
     const scheme = SCHEMES[Math.floor(hash(i + 100) * SCHEMES.length)]
     const cities = CITIES[county] || [county]
     const city = cities[Math.floor(hash(i + 200) * cities.length)]
-    const [lat, lng] = COUNTIES[county]
+    const [lat, lng] = cfg.center
+    const radius = cfg.radius
     const year = 2020 + Math.floor(hash(i + 300) * 7)
     const month = 1 + Math.floor(hash(i + 400) * 12)
     // Scale: $80M–$1B per case → ~$900B+ total
@@ -91,6 +94,12 @@ export function getFallbackCases(): FallbackCase[] {
     const dateFiled = `${year}-${String(month).padStart(2, '0')}-15`
     const resolved = ['settled', 'convicted'].includes(status)
     const dateResolved = resolved ? `${year}-${String(month + 3).padStart(2, '0')}-01` : null
+
+    // Spread points across county: use radial distribution so all 1800 are visible when zoomed in
+    const angle = hash(i + 700) * Math.PI * 2
+    const r = Math.sqrt(hash(i + 800)) * radius
+    const dlat = r * Math.cos(angle)
+    const dlng = r * Math.sin(angle) * 0.8
 
     cases.push({
       id: i + 1,
@@ -105,8 +114,8 @@ export function getFallbackCases(): FallbackCase[] {
       status,
       county,
       city,
-      latitude: lat + (hash(i) - 0.5) * 0.3,
-      longitude: lng + (hash(i + 1000) - 0.5) * 0.3,
+      latitude: lat + dlat,
+      longitude: lng + dlng,
     })
   }
   _cases = cases
