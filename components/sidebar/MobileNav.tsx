@@ -89,7 +89,7 @@ export default function MobileNav() {
   return (
     <>
       {/* Mobile top bar with KPIs */}
-      <div className="fixed top-0 left-0 right-0 z-20 lg:hidden">
+      <div className="fixed top-0 left-0 right-0 z-20 lg:hidden safe-area-top">
         {/* Header */}
         <div className="bg-california-white/95 backdrop-blur-md border-b border-california-border">
           <div className="flex items-center justify-between px-4 py-3">

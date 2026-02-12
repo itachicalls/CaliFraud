@@ -23,13 +23,13 @@ export default function MainTabs() {
 
   return (
     <div className="h-full w-full flex flex-col">
-      {/* Tab bar */}
-      <div className="flex-shrink-0 flex items-center gap-1 px-4 py-3 bg-california-white/95 backdrop-blur border-b border-california-border z-30">
+      {/* Tab bar - scrollable on mobile */}
+      <div className="flex-shrink-0 flex items-center gap-1 px-3 md:px-4 py-3 bg-california-white/95 backdrop-blur border-b border-california-border z-30 overflow-x-auto scrollbar-hide overscroll-x-contain snap-x">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 rounded-t-lg text-sm font-medium transition-colors ${
+            className={`flex-shrink-0 px-3 md:px-4 py-2.5 min-h-[44px] rounded-t-lg text-sm font-medium transition-colors touch-target ${
               activeTab === tab.id
                 ? 'bg-california-poppy text-white'
                 : 'text-text-secondary hover:text-text-primary hover:bg-california-sand/50'
