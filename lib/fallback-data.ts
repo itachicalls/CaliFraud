@@ -1,99 +1,9 @@
 /**
  * Static fallback data when database is unavailable (e.g. Neon quota exceeded).
- * Deterministic - same data every time. ~1800 cases, ~$900B+ total exposed.
+ * Uses REAL fraud cases from public records (DOJ, OAG, USAO, county DAs).
  */
 import { SCHEME_TO_TYPOLOGY } from '@/lib/typology'
-
-// County center + approximate radius (deg) for spreading points across the county
-const COUNTIES: Record<string, { center: [number, number]; radius: number }> = {
-  'Los Angeles':    { center: [34.0522, -118.2437], radius: 0.65 },
-  'San Diego':      { center: [32.7157, -117.1611], radius: 0.45 },
-  'Orange':         { center: [33.7175, -117.8311], radius: 0.3 },
-  'Riverside':      { center: [33.9806, -117.3755], radius: 0.55 },
-  'San Bernardino': { center: [34.1083, -117.2898], radius: 0.6 },
-  'Santa Clara':    { center: [37.3541, -121.9552], radius: 0.35 },
-  'Alameda':        { center: [37.8044, -122.2712], radius: 0.3 },
-  'Sacramento':     { center: [38.5816, -121.4944], radius: 0.4 },
-  'San Francisco':  { center: [37.7749, -122.4194], radius: 0.15 },
-  'Contra Costa':   { center: [37.9161, -122.0574], radius: 0.3 },
-  'Fresno':         { center: [36.7378, -119.7871], radius: 0.45 },
-  'Kern':           { center: [35.3733, -119.0187], radius: 0.55 },
-  'Ventura':        { center: [34.2746, -119.2290], radius: 0.35 },
-  'San Mateo':      { center: [37.5630, -122.3255], radius: 0.2 },
-  'San Joaquin':    { center: [37.9577, -121.2908], radius: 0.4 },
-  'Stanislaus':     { center: [37.5091, -120.9876], radius: 0.35 },
-  'Sonoma':         { center: [38.5110, -122.8111], radius: 0.35 },
-  'Tulare':         { center: [36.2077, -118.7815], radius: 0.45 },
-  'Santa Barbara':  { center: [34.4208, -119.6982], radius: 0.35 },
-  'Monterey':       { center: [36.6002, -121.8947], radius: 0.4 },
-  'Placer':         { center: [39.0916, -120.8039], radius: 0.4 },
-  'Solano':         { center: [38.2494, -121.9400], radius: 0.3 },
-  'Marin':          { center: [38.0834, -122.7633], radius: 0.2 },
-  'Merced':         { center: [37.3022, -120.4830], radius: 0.35 },
-  'Butte':          { center: [39.6635, -121.6006], radius: 0.35 },
-  'Shasta':         { center: [40.5865, -122.3917], radius: 0.45 },
-  'Imperial':       { center: [32.8476, -115.5693], radius: 0.45 },
-  'San Luis Obispo':{ center: [35.2828, -120.6596], radius: 0.4 },
-  'Humboldt':       { center: [40.7450, -123.8695], radius: 0.4 },
-  'El Dorado':      { center: [38.7846, -120.5257], radius: 0.35 },
-}
-
-const SCHEMES = [
-  'edd_unemployment',
-  'ppp_fraud',
-  'medi_cal',
-  'telemedicine',
-  'homeless_program',
-  'pharmacy',
-  'contract_fraud',
-  'substance_abuse',
-] as const
-
-const CITIES: Record<string, string[]> = {
-  'Los Angeles':    ['Los Angeles', 'Long Beach', 'Santa Monica', 'Glendale', 'Pasadena', 'Torrance', 'Pomona', 'Compton', 'Downey'],
-  'San Diego':      ['San Diego', 'Chula Vista', 'Oceanside', 'Escondido', 'Carlsbad'],
-  'Orange':         ['Anaheim', 'Santa Ana', 'Irvine', 'Huntington Beach', 'Fullerton', 'Garden Grove'],
-  'Riverside':      ['Riverside', 'Corona', 'Moreno Valley', 'Temecula', 'Murrieta'],
-  'San Bernardino': ['San Bernardino', 'Fontana', 'Ontario', 'Rancho Cucamonga', 'Victorville'],
-  'Santa Clara':    ['San Jose', 'Sunnyvale', 'Santa Clara', 'Mountain View', 'Milpitas'],
-  'Alameda':        ['Oakland', 'Berkeley', 'Fremont', 'Hayward', 'Livermore'],
-  'Sacramento':     ['Sacramento', 'Elk Grove', 'Folsom', 'Citrus Heights'],
-  'San Francisco':  ['San Francisco'],
-  'Contra Costa':   ['Concord', 'Richmond', 'Walnut Creek', 'Antioch'],
-  'Fresno':         ['Fresno', 'Clovis', 'Sanger'],
-  'Kern':           ['Bakersfield', 'Delano', 'Wasco'],
-  'Ventura':        ['Ventura', 'Oxnard', 'Thousand Oaks', 'Simi Valley'],
-  'San Mateo':      ['San Mateo', 'Daly City', 'Redwood City'],
-  'San Joaquin':    ['Stockton', 'Tracy', 'Lodi', 'Manteca'],
-  'Stanislaus':     ['Modesto', 'Turlock', 'Ceres'],
-  'Sonoma':         ['Santa Rosa', 'Petaluma', 'Rohnert Park'],
-  'Tulare':         ['Visalia', 'Tulare', 'Porterville'],
-  'Santa Barbara':  ['Santa Barbara', 'Santa Maria', 'Lompoc'],
-  'Monterey':       ['Salinas', 'Monterey', 'Seaside'],
-  'Placer':         ['Roseville', 'Rocklin', 'Auburn'],
-  'Solano':         ['Vallejo', 'Fairfield', 'Vacaville'],
-  'Marin':          ['San Rafael', 'Novato'],
-  'Merced':         ['Merced', 'Los Banos'],
-  'Butte':          ['Chico', 'Oroville'],
-  'Shasta':         ['Redding', 'Anderson'],
-  'Imperial':       ['El Centro', 'Calexico'],
-  'San Luis Obispo':['San Luis Obispo', 'Paso Robles', 'Atascadero'],
-  'Humboldt':       ['Eureka', 'Arcata'],
-  'El Dorado':      ['Placerville', 'South Lake Tahoe'],
-}
-
-const STATUSES = ['open', 'under_investigation', 'charged', 'settled', 'convicted']
-
-// Proper bit-mixing hash (splitmix32) — no linear artifacts
-function hash(i: number) {
-  let x = (i | 0) + 0x9e3779b9
-  x ^= x >>> 16
-  x = Math.imul(x, 0x21f0aaad)
-  x ^= x >>> 15
-  x = Math.imul(x, 0x735a2d97)
-  x ^= x >>> 15
-  return (x >>> 0) / 0xffffffff
-}
+import { getRealFraudCases } from '@/lib/real-fraud-cases'
 
 export interface FallbackCase {
   id: number
@@ -110,56 +20,34 @@ export interface FallbackCase {
   city: string | null
   latitude: number | null
   longitude: number | null
+  sourceUrl?: string | null
+  entityNames?: string[]
 }
 
 let _cases: FallbackCase[] | null = null
 
 export function getFallbackCases(): FallbackCase[] {
   if (_cases) return _cases
-  const countyList = Object.keys(COUNTIES)
-  const cases: FallbackCase[] = []
-
-  const N = 1800
-  for (let i = 0; i < N; i++) {
-    const county = countyList[Math.floor(hash(i) * countyList.length)]
-    const cfg = COUNTIES[county]
-    const scheme = SCHEMES[Math.floor(hash(i + 100) * SCHEMES.length)]
-    const cities = CITIES[county] || [county]
-    const city = cities[Math.floor(hash(i + 200) * cities.length)]
-    const [lat, lng] = cfg.center
-    const radius = cfg.radius
-    const year = 2020 + Math.floor(hash(i + 300) * 7)
-    const month = 1 + Math.floor(hash(i + 400) * 12)
-    // Scale: $80M–$1B per case → ~$900B+ total
-    const amount = 80_000_000 + hash(i + 500) * 920_000_000
-    const status = STATUSES[Math.floor(hash(i + 600) * STATUSES.length)]
-    const dateFiled = `${year}-${String(month).padStart(2, '0')}-15`
-    const resolved = ['settled', 'convicted'].includes(status)
-    const dateResolved = resolved ? `${year}-${String(month + 3).padStart(2, '0')}-01` : null
-
-    // Spread points across county — proper hash means simple seeds work
-    const dlat = (hash(i + 7000) - 0.5) * 2 * radius
-    const dlng = (hash(i + 8000) - 0.5) * 2 * radius * 0.85
-
-    cases.push({
-      id: i + 1,
-      caseNumber: `CA-${year}-${String(i + 1).padStart(6, '0')}`,
-      title: `${scheme.replace(/_/g, ' ')} - ${city}`,
-      description: `Fraud case in ${city}, ${county} County.`,
-      schemeType: scheme,
-      amountExposed: amount,
-      amountRecovered: resolved ? amount * 0.2 : null,
-      dateFiled,
-      dateResolved,
-      status,
-      county,
-      city,
-      latitude: lat + dlat,
-      longitude: lng + dlng,
-    })
-  }
-  _cases = cases
-  return cases
+  const real = getRealFraudCases()
+  _cases = real.map((c) => ({
+    id: c.id,
+    caseNumber: c.caseNumber,
+    title: c.title,
+    description: c.description,
+    schemeType: c.schemeType,
+    amountExposed: c.amountExposed,
+    amountRecovered: c.amountRecovered,
+    dateFiled: c.dateFiled,
+    dateResolved: c.dateResolved,
+    status: c.status,
+    county: c.county,
+    city: c.city,
+    latitude: c.latitude,
+    longitude: c.longitude,
+    sourceUrl: c.sourceUrl,
+    entityNames: c.entityNames,
+  }))
+  return _cases
 }
 
 export function getFallbackSummary() {
@@ -361,7 +249,7 @@ export function getFallbackCasesPaginated(options: {
       city: c.city,
       latitude: c.latitude,
       longitude: c.longitude,
-      source_url: null,
+      source_url: c.sourceUrl ?? null,
       typology: SCHEME_TO_TYPOLOGY[c.schemeType] ?? null,
       still_operating: c.status === 'open' || c.status === 'under_investigation',
       still_operating_source: null,
@@ -459,8 +347,8 @@ export function getFallbackAccountability(filters?: { still_operating?: string }
       county: c.county,
       city: c.city,
       status: c.status,
-      source_url: null,
-      entity_names: [],
+      source_url: c.sourceUrl ?? null,
+      entity_names: c.entityNames ?? [],
       still_operating: c.status === 'open' || c.status === 'under_investigation',
       still_operating_source: null,
     })),
