@@ -209,6 +209,15 @@ const NOTABLE_CASES: NotableCase[] = [
     summary: 'Conviction for ballot petition fraud.',
     outcome: 'Convicted',
   },
+  {
+    id: 'maya-2023',
+    year: 2023,
+    county: 'San Francisco',
+    category: 'registration_fraud',
+    title: 'Maya – registration fraud',
+    summary: 'A dog named Maya was discovered on the voter rolls.',
+    outcome: 'Registration voided',
+  },
 ]
 
 export function getVoterFraudYearly(): YearlySnapshot[] {
