@@ -7,10 +7,11 @@ import CaliforniaMap from '@/components/map/CaliforniaMap'
 import OverviewTab from './OverviewTab'
 import AccountabilityTrackerTab from './AccountabilityTrackerTab'
 import VoterFraudTab from './VoterFraudTab'
+import SourcesTab from './SourcesTab'
 
 const WebOfFraudTab = dynamic(() => import('./WebOfFraudTab'), { ssr: false })
 
-type TabId = 'map' | 'overview' | 'accountability' | 'web' | 'voterfraud'
+type TabId = 'map' | 'overview' | 'accountability' | 'web' | 'voterfraud' | 'sources'
 
 export default function MainTabs() {
   const [activeTab, setActiveTab] = useState<TabId>('map')
@@ -21,6 +22,7 @@ export default function MainTabs() {
     { id: 'web', label: 'Web of Fraud' },
     { id: 'voterfraud', label: 'Voter Fraud' },
     { id: 'accountability', label: 'Accountability Tracker' },
+    { id: 'sources', label: 'Sources' },
   ]
 
   return (
@@ -98,6 +100,17 @@ export default function MainTabs() {
               className="absolute inset-0 bg-california-sand overflow-auto"
             >
               <AccountabilityTrackerTab />
+            </motion.div>
+          )}
+          {activeTab === 'sources' && (
+            <motion.div
+              key="sources"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="absolute inset-0 bg-california-sand overflow-auto"
+            >
+              <SourcesTab />
             </motion.div>
           )}
         </AnimatePresence>
