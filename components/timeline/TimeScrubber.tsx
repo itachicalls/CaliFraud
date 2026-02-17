@@ -9,7 +9,7 @@ import { formatCurrency } from '@/lib/design-tokens'
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 export default function TimeScrubber() {
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(true)
   const { data: timeline, isLoading } = useTimeline()
   const currentPeriod = useFilterStore((state) => state.currentPeriod)
   const setCurrentPeriod = useFilterStore((state) => state.setCurrentPeriod)
@@ -143,55 +143,61 @@ export default function TimeScrubber() {
     >
       <div className="max-w-4xl mx-auto lg:ml-80">
         <div className="glass rounded-card shadow-panel overflow-hidden">
-          {/* Collapsed header - always visible */}
-          <button
-            onClick={() => setCollapsed((c) => !c)}
-            className="w-full flex items-center justify-between p-4 hover:bg-white/50 transition-colors text-left"
-            aria-expanded={!collapsed}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-california-poppy">
-                {collapsed ? (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
-                ) : (
+          {/* Collapsed: barely-visible thin strip. Expanded: full header with play, title, etc. */}
+          {collapsed ? (
+            <button
+              onClick={() => setCollapsed(false)}
+              className="group w-full flex items-center justify-between px-3 py-1.5 min-h-[24px] opacity-30 hover:opacity-60 transition-all duration-200 text-left"
+              aria-expanded={false}
+              aria-label="Expand CaliFraud Timelapse"
+            >
+              <span className="text-xs text-text-primary truncate">CaliFraud Timelapse</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0 opacity-60 group-hover:opacity-100">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+          ) : (
+            <button
+              onClick={() => setCollapsed(true)}
+              className="w-full flex items-center justify-between p-4 hover:bg-white/50 transition-colors text-left"
+              aria-expanded={true}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-california-poppy">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polyline points="18 15 12 9 6 15" />
                   </svg>
-                )}
-              </span>
-              <button
-                onClick={(e) => { e.stopPropagation(); isPlaying ? stopPlayback() : startPlayback() }}
-                className="w-10 h-10 flex items-center justify-center rounded-full bg-california-poppy text-white shadow-md hover:bg-california-sunset transition-colors"
-                aria-label={isPlaying ? 'Pause' : 'Play'}
-              >
-                {isPlaying ? (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                    <rect x="6" y="4" width="4" height="16" rx="1" />
-                    <rect x="14" y="4" width="4" height="16" rx="1" />
-                  </svg>
-                ) : (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                )}
-              </button>
-              <div>
-                <p className="text-sm font-medium text-text-primary">
-                  CaliFraud Timelapse
-                </p>
-                <p className="text-xs text-text-secondary">
-                  {currentPeriod
-                    ? `${MONTHS[parseInt(currentPeriod.split('-')[1]) - 1]} ${currentPeriod.split('-')[0]} • ${formatCurrency(currentData?.total_exposed ?? 0)}`
-                    : `2020 – 2026 • ${timeline.reduce((sum, t) => sum + t.case_count, 0).toLocaleString()} cases • ${formatCurrency(totalFraud)}`}
-                </p>
+                </span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); isPlaying ? stopPlayback() : startPlayback() }}
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-california-poppy text-white shadow-md hover:bg-california-sunset transition-colors"
+                  aria-label={isPlaying ? 'Pause' : 'Play'}
+                >
+                  {isPlaying ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <rect x="6" y="4" width="4" height="16" rx="1" />
+                      <rect x="14" y="4" width="4" height="16" rx="1" />
+                    </svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  )}
+                </button>
+                <div>
+                  <p className="text-sm font-medium text-text-primary">
+                    CaliFraud Timelapse
+                  </p>
+                  <p className="text-xs text-text-secondary">
+                    {currentPeriod
+                      ? `${MONTHS[parseInt(currentPeriod.split('-')[1]) - 1]} ${currentPeriod.split('-')[0]} • ${formatCurrency(currentData?.total_exposed ?? 0)}`
+                      : `2020 – 2026 • ${timeline.reduce((sum, t) => sum + t.case_count, 0).toLocaleString()} cases • ${formatCurrency(totalFraud)}`}
+                  </p>
+                </div>
               </div>
-            </div>
-            {collapsed && (
-              <span className="text-xs text-text-tertiary">Click to expand</span>
-            )}
-          </button>
+              <span className="text-xs text-text-tertiary">Click to collapse</span>
+            </button>
+          )}
 
           {/* Expandable content */}
           <AnimatePresence initial={false}>
